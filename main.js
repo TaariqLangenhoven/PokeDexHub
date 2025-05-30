@@ -22,6 +22,7 @@ const fetchData = async () => {
         pokemonData.push(data)
         console.log("DATA: ", data)
 
+        //Might need to use the following in the future:
         /*
         const { id, name, weight, height, sprites, types } = data;
         const { front_default } = sprites;
