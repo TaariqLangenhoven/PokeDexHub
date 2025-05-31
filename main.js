@@ -21,8 +21,8 @@ const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/po
 const fetchData = async () => {
     try {
         
-        //const res = await fetch(`${url}/${searchTxt.value.toLowerCase()}`);
-        const res = await fetch(testData)
+        const res = await fetch(`${url}/${searchTxt.value.toLowerCase()}`);
+        //const res = await fetch(testData)
         const data = await res.json()
         //console.log(data)
         pokemonData.push(data)
@@ -142,7 +142,7 @@ const fetchData = async () => {
                         <div>
                             <p ></i><span class="ml-3">Weak Against</span></p>
                             <div >
-                                 ${addWeakToTypingsUI(type1)}
+                                 ${addWeakToTypingsUI(type1,type2)}
                             </div>
                         </div>
 
@@ -155,7 +155,7 @@ const fetchData = async () => {
                     </div>
                 </div>
             </div>    
-            
+           
            
                    `
 
@@ -198,9 +198,9 @@ const fetchData = async () => {
     
     }
 
-    function addWeakToTypingsUI(primaryType){
+    function addWeakToTypingsUI(primaryType,secondaryType){
         
-         const typeArr = typings.displayWeakToTypes(primaryType)
+         const typeArr = typings.displayWeakTypes(primaryType,secondaryType)
    
         return typeArr.map((type)=>{
             return `<p class="${typeClass.addClassToUI(type)} rounded-2xl w-32 text-[20px] p-1 pl-3 mr-4" for=""><span id="primaryTypeIcon">${typeClass.addImgToUI(type)}</span>${type}</p>`
@@ -220,6 +220,13 @@ searchBtn.addEventListener("click",()=>{
     //console.log(searchTxt.value)
 })
 
+searchTxt.addEventListener("keypress",(event)=>{
+    if (event.key === "Enter"){
+         fetchData()
+    }
+   
+})
+
 sidebarMenuOpenBtn.addEventListener("click",()=>{
     sidebar.classList.toggle("hidden")
     overlay.style.display = "block"
@@ -235,6 +242,6 @@ overlay.addEventListener("click",()=>{
     sidebar.classList.toggle("hidden")
 })
 
-fetchData()
+//fetchData()
 
 
