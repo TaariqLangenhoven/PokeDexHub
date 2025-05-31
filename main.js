@@ -1,16 +1,22 @@
 
 //const setLimit =  "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1303"
-// https://pokeapi-proxy.freecodecamp.rocks/api/pokemon
+
 
 import * as typings from './typings.js'
 import * as typeClass from './typeClasses.js'
 
+const sidebarMenuOpenBtn = document.querySelector(".sidebarMenuOpenBtn")
+const sidebarMenuCloseBtn = document.querySelector(".sidebarMenuCloseBtn")
+const sidebar = document.querySelector(".nav-sidebar")
+const overlay = document.getElementById("overlay")
+
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
-const testData = "https://pokeapi.co/api/v2/pokemon/25"
+const testData = "https://pokeapi.co/api/v2/pokemon/1025"
 const pokemonData = []
 const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/pokemon/{id or name}/`
+
 
 const fetchData = async () => {
     try {
@@ -212,6 +218,21 @@ const fetchData = async () => {
 searchBtn.addEventListener("click",()=>{
     fetchData()
     //console.log(searchTxt.value)
+})
+
+sidebarMenuOpenBtn.addEventListener("click",()=>{
+    sidebar.classList.toggle("hidden")
+    overlay.style.display = "block"
+})
+
+sidebarMenuCloseBtn.addEventListener("click",()=>{
+    sidebar.classList.toggle("hidden")
+    overlay.style.display = "none"
+})
+
+overlay.addEventListener("click",()=>{
+    overlay.style.display = "none"
+    sidebar.classList.toggle("hidden")
 })
 
 fetchData()
