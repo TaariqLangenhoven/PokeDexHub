@@ -558,56 +558,49 @@ function displaySuperEffectiveTypes(typing){
     const arrOfTypes = []
     const check = superEffectiveTypings.find((item)=> item.type === typing ) 
     check.effectiveness.forEach((type)=> arrOfTypes.push(type.type)) 
+    console.log("Strong against: ",arrOfTypes)
     return arrOfTypes
 }
 
-function displayWeakToTypes(typing){
-    const arrOfTypes = []
-    const check = weakToTypings.find((item)=> item.type === typing )
-    check.weakTo.forEach((type)=> arrOfTypes.push(type.type))
-    return arrOfTypes
-}
+function displayWeakTypes(type1, type2) {
+  const arrOfTypes = [];
+  const arrOfResistTypes = [];
+  const arrOfImmunities = [];
 
-// still need to exclude normal damage
-function displayWeakTypes(type1,type2){
+  // Helper function to collect typings
+  function collectTypeData(type) {
+    const weakEntry = weakToTypings.find(t => t.type === type);
+    if (weakEntry) weakEntry.weakTo.forEach(t => arrOfTypes.push(t.type));
 
-  const arrOfTypes = []
-  const arrOfResistTypes = []
-  const arrOfImmunities = []
-  
-  if (pokemonTypes.find((type)=> type === type2)){
+    const resistEntry = resistTypings.find(t => t.type === type);
+    if (resistEntry) resistEntry.resist.forEach(t => arrOfResistTypes.push(t.type));
 
-    const typesWeakToType2 = weakToTypings.find((type)=> type.type === type2 )
-    typesWeakToType2.weakTo.forEach((type)=> arrOfTypes.push(type.type))
-
-    const resistType2 = resistTypings.find((type)=> type.type === type2)
-    resistType2.resist.forEach((type)=> arrOfResistTypes.push(type.type))
-
-    const immuneType2 = immuneTypings.find((type)=> type.type === type2 )
-    immuneType2.immuneTo.forEach((type)=> arrOfImmunities.push(type.type))
-
+    const immuneEntry = immuneTypings.find(t => t.type === type);
+    if (immuneEntry) immuneEntry.immuneTo.forEach(t => arrOfImmunities.push(t.type));
   }
-  
-  const typesWeakToType1 = weakToTypings.find((type)=> type.type === type1 )
-  typesWeakToType1.weakTo.forEach((type)=> arrOfTypes.push(type.type))  
-  console.log(arrOfTypes)
-  
-  const resistType1 = resistTypings.find((type)=> type.type === type1)
-  resistType1.resist.forEach((type)=> arrOfResistTypes.push(type.type))
-  console.log(arrOfResistTypes)
 
-  const immuneType1 = immuneTypings.find((type)=> type.type === type1 )
-  immuneType1.immuneTo.forEach((type)=> arrOfImmunities.push(type.type))
-  console.log(arrOfImmunities)
+  collectTypeData(type1);
 
-   const filteredArrOfTypes = arrOfTypes.filter(type => 
-    !arrOfResistTypes.includes(type) && !arrOfImmunities.includes(type)
+  if (pokemonTypes.includes(type2)) {
+    console.log("TEST IF TYPE2 IS ACTIVE");
+    collectTypeData(type2);
+  }
+
+  console.log("weak types arr: ", arrOfTypes);
+  console.log("resist types arr: ", arrOfResistTypes);
+  console.log("immunities types arr: ", arrOfImmunities);
+
+  const filteredArrOfTypes = arrOfTypes.filter(
+    type => !arrOfResistTypes.includes(type) && !arrOfImmunities.includes(type)
   );
- 
-  const removedDups = [...new Set(filteredArrOfTypes)]
-  
-  return console.log("end product: ",removedDups)
+
+  const removedDups = [...new Set(filteredArrOfTypes)];
+  console.log("end product: ", removedDups);
+
+  return removedDups;
 }
 
 
-export {superEffectiveTypings, weakToTypings, displaySuperEffectiveTypes, displayWeakToTypes, displayWeakTypes}
+
+
+export {displaySuperEffectiveTypes, displayWeakTypes}
