@@ -558,7 +558,7 @@ function displaySuperEffectiveTypes(typing){
     const arrOfTypes = []
     const check = superEffectiveTypings.find((item)=> item.type === typing ) 
     check.effectiveness.forEach((type)=> arrOfTypes.push(type.type)) 
-    console.log("Strong against: ",arrOfTypes)
+    //console.log("Strong against: ",arrOfTypes)
     return arrOfTypes
 }
 
@@ -582,20 +582,20 @@ function displayWeakTypes(type1, type2) {
   collectTypeData(type1);
 
   if (pokemonTypes.includes(type2)) {
-    console.log("TEST IF TYPE2 IS ACTIVE");
+    //console.log("TEST IF TYPE2 IS ACTIVE");
     collectTypeData(type2);
   }
 
-  console.log("weak types arr: ", arrOfTypes);
-  console.log("resist types arr: ", arrOfResistTypes);
-  console.log("immunities types arr: ", arrOfImmunities);
+  //console.log("weak types arr: ", arrOfTypes);
+  //console.log("resist types arr: ", arrOfResistTypes);
+ // console.log("immunities types arr: ", arrOfImmunities);
 
   const filteredArrOfTypes = arrOfTypes.filter(
     type => !arrOfResistTypes.includes(type) && !arrOfImmunities.includes(type)
   );
 
   const removedDups = [...new Set(filteredArrOfTypes)];
-  console.log("end product: ", removedDups);
+  //console.log("end product: ", removedDups);
 
   return removedDups;
 }
