@@ -7,41 +7,42 @@
   <script src="https://kit.fontawesome.com/4d74f04fa9.js" crossorigin="anonymous"></script>
 </head>
 <body>
-
-    <nav class="nav-sidebar hidden">
-        <ul >
-            <li class="sidebarMenuCloseBtn"><i class="fa-solid fa-x"></i></li>
-            <li ><span><i class="fa-solid fa-house"></i></span> Home</li>
-            <li ><span><i class="fa-solid fa-computer"></i></span> Pokedex</li>
-            <li ><span><i class="fa-solid fa-code-compare"></i></span> Compare Pokemon</li>
-            <li ><span><i class="fa-solid fa-helmet-safety"></i></span> Buld Team</li>
-            <li ><i class="fa-solid fa-dna"></i><span></span> Evolution Chain</li>
-        </ul>
-    </nav>
-
-   <nav class="nav-desktop">
+        <!--
+            <nav class="nav-sidebar hidden">
+                <ul >
+                    <li class="sidebarMenuCloseBtn"><i class="fa-solid fa-x"></i></li>
+                    <li ><span><i class="fa-solid fa-house"></i></span> Home</li>
+                    <li ><span><i class="fa-solid fa-computer"></i></span> Pokedex</li>
+                    <li ><span><i class="fa-solid fa-code-compare"></i></span> Compare Pokemon</li>
+                    <li ><span><i class="fa-solid fa-helmet-safety"></i></span> Buld Team</li>
+                    <li ><i class="fa-solid fa-dna"></i><span></span> Evolution Chain</li>
+                </ul>
+            </nav>
+        -->
+        
+   <nav class="nav-desktop hideOnMobile ">
         <ul >        
-            <li class="hideOnMobile"><span><i class="fa-solid fa-house"></i></span> Home</li>
-            <li class="hideOnMobile"><span><i class="fa-solid fa-computer"></i></span> Pokedex</li>
-            <li class="hideOnMobile"><span><i class="fa-solid fa-code-compare"></i></span> Compare Pokemon</li>
-            <li class="hideOnMobile"><span><i class="fa-solid fa-helmet-safety"></i></span> Buld Team</li>
-            <li class="hideOnMobile"><i class="fa-solid fa-dna"></i><span></span> Evolution Chain</li>
-            <li class="sidebarMenuOpenBtn hidden"><i class="fa-solid fa-bars"></i></li>
+            <li class="hideOnMobile responsive-color"><span><i class="fa-solid fa-house"></i></span> Home</li>
+            <li class="hideOnMobile responsive-color"><span><i class="fa-solid fa-computer"></i></span> Pokedex</li>
+            <li class="hideOnMobile responsive-color"><span><i class="fa-solid fa-code-compare"></i></span> Compare Pokemon</li>
+            <li class="hideOnMobile responsive-color"><span><i class="fa-solid fa-helmet-safety"></i></span> Buld Team</li>
+            <li class="hideOnMobile responsive-color"><i class="fa-solid fa-dna"></i><span></span> Evolution Chain</li>
+            <!--<li class="sidebarMenuOpenBtn hidden responsive-color"><i class="fa-solid fa-bars"></i></li>-->
         </ul>        
    </nav>
         
-   <div id="overlay"></div>
+   <!--<div id="overlay"></div>-->    
+    <main class="main-content">
+       
+        <div class="header" >  
+            <div class="search-container" >
+                <input id="searchTxt" class="searchBar" type="text" placeholder="Search pokemon by name/index" >
+                <button id="searchBtn" class="searchBarBtn">Search</button>
+            </div>       
+        </div>
 
-    <div class="header" >  
-        <div class="search-container" >
-            <input id="searchTxt" class="searchBar" type="text" placeholder="Search pokemon by name/index" >
-            <button id="searchBtn" class="searchBarBtn">Search</button>
-        </div>       
-    </div>
-    
-    <main>
-        <div id="pokeDex">
-      
+        <div id="pokeDex"> 
+             
         </div>
     </main>
 
