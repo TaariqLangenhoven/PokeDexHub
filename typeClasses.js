@@ -104,4 +104,64 @@ function addClassToUI(type) {
 
 }
 
-export {addClassToUI, addImgToUI}
+function addResponsiveColor(type){
+  switch (type) {
+    case 'normal':
+            return `res-type-normal`
+            break;
+        case 'fire':
+            return `res-type-fire`
+            break;
+        case 'water':
+            return `res-type-water`
+            break;
+        case 'grass':
+            return `res-type-grass`
+            break;
+        case 'electric':
+            return `res-type-electric`
+            break;
+        case 'ice':
+            return `res-type-ice`
+            break;
+        case 'fighting':
+            return `res-type-fighting`
+            break;
+        case 'poison':
+            return `res-type-poison`
+        case 'ground':
+            return `res-type-ground`
+            break;
+        case 'flying':
+            return `res-type-flying`
+            break;
+        case 'psychic':
+            return `res-type-psychic`
+            break;
+        case 'bug':
+            return `res-type-bug`
+            break;
+        case 'rock':
+            return `res-type-rock`
+            break;
+        case 'ghost':
+            return `res-type-ghost`
+            break;
+        case 'dragon':
+            return `res-type-dragon`
+            break;
+        case 'dark':
+            return `res-type-dark`
+            break;
+        case 'steel':
+            return `res-type-steel`
+            break;
+        case 'fairy':
+            return `res-type-fairy`
+            break;
+        default:
+            break;
+  }
+}
+
+export {addClassToUI, addImgToUI, addResponsiveColor}

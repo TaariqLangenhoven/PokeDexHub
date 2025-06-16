@@ -5,11 +5,12 @@
 import * as typings from './typings.js'
 import * as typeClass from './typeClasses.js'
 
+/*
 const sidebarMenuOpenBtn = document.querySelector(".sidebarMenuOpenBtn")
 const sidebarMenuCloseBtn = document.querySelector(".sidebarMenuCloseBtn")
 const sidebar = document.querySelector(".nav-sidebar")
 const overlay = document.getElementById("overlay")
-
+*/
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
@@ -17,6 +18,8 @@ const testData = "https://pokeapi.co/api/v2/pokemon/2"
 const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
 const abilityURL = "https://pokeapi.co/api/v2/ability/"
 const pokemonSpeciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
+const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
+
 //const pokemonData = []
 const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/pokemon/{id or name}/`
 
@@ -61,6 +64,7 @@ const fetchData = async () => {
                 const {flavor_text_entries} = data
                 const descriptionText = flavor_text_entries[1].flavor_text
                 
+                console.log(flavor_text_entries)
                 console.log("Ability description: ", descriptionText)
                 const description = descriptionText.replace(/\n/g, " ")
 
@@ -91,17 +95,32 @@ const fetchData = async () => {
             return health
         }
 
-        const getCatchRate = (rate) => {
+        const getPokeBallImage = async (item)=>{
+
+            try {
+                const res = await fetch(`${pokemonItemsUrl}${item}`)
+                const listOfItems = await res.json()
+
+                const {sprites} = listOfItems 
+
+                console.log("List of items: ", sprites.default)
+
+            } catch (error) {
+                console.log(error)
+            }        
+        }
+
+        const getCatchRate = (rate,item) => {
             
             const maxHp = getPokemonHp()
             const currentHp = maxHp / 2       
             const ballMod = {
-                "pokeball": 1,
+                "pokeBall": 1,
                 "greatBall": 1.5,
                 "ultraBall": 2
             }
 
-            const base = (((3 * maxHp) - (2 * currentHp)) * (rate * ballMod.pokeball)) / (3 * maxHp)
+            const base = (((3 * maxHp) - (2 * currentHp)) * (rate * ballMod[item])) / (3 * maxHp)
 
             const probability = base / 255
             console.log("Probability: ", probability)
@@ -111,10 +130,12 @@ const fetchData = async () => {
         }
 
         const pokemonCaptureRate = await getCaptureRate(name)
+
         const ability1ShortDescription = await getAbilityDescription(ability1)
         const ability2ShortDescription = ability2 !== "none" ? await getAbilityDescription(ability2) : "None"
 
-        
+        const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
+
         pokeDex.innerHTML = `
 
             <div>
@@ -138,7 +159,7 @@ const fetchData = async () => {
                 </div>      
             </div>     
             
-            <div id="pokedexInfo">
+          
                 <div class="image-container flex-center" >
                     <div class="wrapper flex-center card">       
                         <img class="pokemonImg" src="${front_default}" >     
@@ -153,18 +174,15 @@ const fetchData = async () => {
                     </ul>
                 </nav>
                 
-                <div class="about-stats-moves-container">
-
-                </div>
-
-                <div class="species-container flex-center">
+                <div class="about-stats-moves-container main-info-grid">
+                    <div class="mt-2 species-container flex-center">
                     <div class="type-info wrapper-col card">
                             <div class="wrapper-col flex-center">
-                                <h3 class="responsive-color">Species</h3>
-                                <div class="text-center">
+                                <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Species</h3>
+                                <div class="text-center mt-1 ">
                                     <p>${entry1}</p>
                                 </div>
-                                <div class="wrapper">
+                                <div class="wrapper mt-1 ">
                                     <p id="primaryType" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span>${firstLetterCaps(type1)}</p>
                                     ${displaySecondType(type2)}
                                 </div>
@@ -181,7 +199,7 @@ const fetchData = async () => {
                                 </div>  
                             </div>
                             <div class="mt-1 wrapper-col flex-center">
-                                <i class="fa-solid fa-microphone-lines"></i>
+                                <button class="cryBtn"><i class="fa-solid fa-circle-play"></i></button>
                                 <h3>Cry</h3>
                             </div>     
                     </div>
@@ -190,18 +208,29 @@ const fetchData = async () => {
                 <div class="abilities-container flex-center">
                     <div class="type-info  card">
                         <div class="wrapper-col flex-center">
-                            <h3 class="responsive-color">Abilities</h3>
-                            <div class="text-center">
+                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Abilities</h3>
+                            <div class="text-center mt-1">
                                 <P>abilities are passive special traits that can enhance or hinder a Pokémon's performance in battle or in the overworld. They are activated automatically and can provide various effects, such as boosting stats, influencing weather conditions, or altering how moves are used. </P>
                             </div>
-                            <div class="wrapper-col flex-center">
-                                <h4>${ability1}</h4>
-                                <p>${ability1ShortDescription}</p>
+
+                            <div>
+                                <div class="wrapper-col mt-1">
+                                    <div class="flex-between pokemonAbilityUI">
+                                        <h4>${firstLetterCaps(ability1)} </h4>
+                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
+                                    </div                                
+                                    <p>${ability1ShortDescription}</p>
+                                </div>
+                                <div class="wrapper-col mt-1">
+                                    <div class="flex-between pokemonAbilityUI">
+                                        <h4>${firstLetterCaps(ability2)} </h4>
+                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
+                                    </div>
+                                    
+                                    <p>${ability2ShortDescription}</p>
+                                </div>
                             </div>
-                            <div class="wrapper-col flex-center">
-                                <h4>${ability2}</h4>
-                                <p>${ability2ShortDescription}</p>
-                            </div>
+                            
                         </div>                      
                     </div>
                 </div>
@@ -209,21 +238,29 @@ const fetchData = async () => {
                 <div class="catchRate-container flex-center">
                     <div class="type-info wrapper-col card">
                         <div class="wrapper-col flex-center">
-                            <h3 class="responsive-color">Catch Rate</h3>
+                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Catch Rate</h3>
                             
-                            <div class="text-center">
+                            <div class="text-center mt-1 ">
                                 <P>In Pokémon games, the catch rate (also known as the capture rate) determines how likely you are to successfully catch a wild Pokémon when using a Poké Ball.</P>
                             </div>
-                            <div class="wrapper-col flex-center">
-                                <p>Catch Rate with Poke ball: ${getCatchRate(pokemonCaptureRate)}</p>
-                                <p>Catch Rate with Great Ball: </p>
-                                <p>Catch Rate with Ultra Ball: </p>
+                            <div class="catchRate-info mt-1 wrapper flex-center">
+                                <div>
+                                    <img src="images/Bag_Poké_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"pokeBall")}</p>
+                                </div>
+                                <div>
+                                    <img src="images/bag_Great_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"greatBall")}</p>
+                                </div>
+                                <div>
+                                    <img src="images/Bag_Ultra_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"ultraBall")}</p>
+                                </div>
+                                
                             </div>
                         </div>                      
                     </div>
                 </div>
-
-                
 
                 <div class="type-diff-container flex-center">
                     <div class="type-info wrapper-col card">
@@ -241,10 +278,9 @@ const fetchData = async () => {
                                 </div>
                             </div>            
                     </div>
-                </div>       
+                </div>
+                </div>
 
-                    
-            </div>
                
                    `
 
@@ -316,7 +352,7 @@ const fetchData = async () => {
            
          }).join("")
     }
-
+  
 
     } catch (error) {
         console.log(error)
@@ -353,6 +389,9 @@ overlay.addEventListener("click",()=>{
 })
 */
 
+
+
 fetchData()
+
 
 
