@@ -5,12 +5,6 @@
 import * as typings from './typings.js'
 import * as typeClass from './typeClasses.js'
 
-/*
-const sidebarMenuOpenBtn = document.querySelector(".sidebarMenuOpenBtn")
-const sidebarMenuCloseBtn = document.querySelector(".sidebarMenuCloseBtn")
-const sidebar = document.querySelector(".nav-sidebar")
-const overlay = document.getElementById("overlay")
-*/
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
@@ -19,6 +13,11 @@ const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
 const abilityURL = "https://pokeapi.co/api/v2/ability/"
 const pokemonSpeciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
 const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
+
+const pokemonAboutBtn = document.getElementById("pokemonAboutBtn")
+const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
+const pokemonMovesBtn = document.getElementById("pokemonMovesBtn")
+const pokedexContent = document.getElementById("pokedex-content")
 
 //const pokemonData = []
 const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/pokemon/{id or name}/`
@@ -160,128 +159,12 @@ const fetchData = async () => {
             </div>     
             
           
-                <div class="image-container flex-center" >
-                    <div class="wrapper flex-center card">       
-                        <img class="pokemonImg" src="${front_default}" >     
-                    </div>
+            <div class="image-container flex-center" >
+                <div class="wrapper flex-center card">       
+                    <img class="pokemonImg" src="${front_default}" >     
                 </div>
-                
-                <nav class="about-navbar">
-                    <ul class="flex-center">
-                        <li id="pokemonAboutBtn" class="responsive-color">About</li>
-                        <li id="pokemonStatsBtn" class="responsive-color">Stats</li>
-                        <li id="pokemonMovesBtn" class="responsive-color">Moves</li>
-                    </ul>
-                </nav>
-                
-                <div class="about-stats-moves-container main-info-grid">
-                    <div class="mt-2 species-container flex-center">
-                    <div class="type-info wrapper-col card">
-                            <div class="wrapper-col flex-center">
-                                <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Species</h3>
-                                <div class="text-center mt-1 ">
-                                    <p>${entry1}</p>
-                                </div>
-                                <div class="wrapper mt-1 ">
-                                    <p id="primaryType" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span>${firstLetterCaps(type1)}</p>
-                                    ${displaySecondType(type2)}
-                                </div>
-                            </div>
-                                
-                            <div class="mt-1 wrapper flex-evenly">
-                                <div class="info-weight-container wrapper-col flex-center">
-                                    <p><i class="fa-solid fa-weight-scale"></i></p>
-                                    <h3>${calculateWeight(weight)}</h3>
-                                </div>
-                                <div class="info-height-container wrapper-col flex-center ">
-                                    <p><i class="fa-solid fa-ruler-vertical"></i></p>
-                                    <h3>${calculateHeight(height)}</h3>
-                                </div>  
-                            </div>
-                            <div class="mt-1 wrapper-col flex-center">
-                                <button class="cryBtn"><i class="fa-solid fa-circle-play"></i></button>
-                                <h3>Cry</h3>
-                            </div>     
-                    </div>
-                </div>
-
-                <div class="abilities-container flex-center">
-                    <div class="type-info  card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Abilities</h3>
-                            <div class="text-center mt-1">
-                                <P>abilities are passive special traits that can enhance or hinder a Pokémon's performance in battle or in the overworld. They are activated automatically and can provide various effects, such as boosting stats, influencing weather conditions, or altering how moves are used. </P>
-                            </div>
-
-                            <div>
-                                <div class="wrapper-col mt-1">
-                                    <div class="flex-between pokemonAbilityUI">
-                                        <h4>${firstLetterCaps(ability1)} </h4>
-                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
-                                    </div                                
-                                    <p>${ability1ShortDescription}</p>
-                                </div>
-                                <div class="wrapper-col mt-1">
-                                    <div class="flex-between pokemonAbilityUI">
-                                        <h4>${firstLetterCaps(ability2)} </h4>
-                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
-                                    </div>
-                                    
-                                    <p>${ability2ShortDescription}</p>
-                                </div>
-                            </div>
-                            
-                        </div>                      
-                    </div>
-                </div>
-
-                <div class="catchRate-container flex-center">
-                    <div class="type-info wrapper-col card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Catch Rate</h3>
-                            
-                            <div class="text-center mt-1 ">
-                                <P>In Pokémon games, the catch rate (also known as the capture rate) determines how likely you are to successfully catch a wild Pokémon when using a Poké Ball.</P>
-                            </div>
-                            <div class="catchRate-info mt-1 wrapper flex-center">
-                                <div>
-                                    <img src="images/Bag_Poké_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"pokeBall")}</p>
-                                </div>
-                                <div>
-                                    <img src="images/bag_Great_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"greatBall")}</p>
-                                </div>
-                                <div>
-                                    <img src="images/Bag_Ultra_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"ultraBall")}</p>
-                                </div>
-                                
-                            </div>
-                        </div>                      
-                    </div>
-                </div>
-
-                <div class="type-diff-container flex-center">
-                    <div class="type-info wrapper-col card">
-                            <div class="wrapper-col">
-                                <h3>Weak Against</h3>
-                                <div class="wrapper-wrap">
-                                    ${addWeakToTypingsUI(type1,type2)}
-                                </div>
-                            </div>
-
-                            <div class="wrapper-col">
-                                <h3>Super Effective Against</span></h3>
-                                <div class="wrapper-wrap">
-                                    ${addEffectiveTypingsUI(type1)}
-                                </div>
-                            </div>            
-                    </div>
-                </div>
-                </div>
-
-               
+            </div>
+      
                    `
 
                    /*<div class="evolutionChain-container flex-center">
@@ -353,11 +236,154 @@ const fetchData = async () => {
          }).join("")
     }
   
+    function getAboutSection(){
+        return `
+        
+                <div class="about-stats-moves-container main-info-grid">
+                    <div class="mt-2 species-container flex-center">
+                        <div class="type-info wrapper-col card">
+                            <div class="wrapper-col flex-center">
+                                <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Species</h3>
+                                <div class="text-center mt-1 ">
+                                    <p>${entry1}</p>
+                                </div>
+                                <div class="wrapper mt-1 ">
+                                    <p id="primaryType" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span>${firstLetterCaps(type1)}</p>
+                                    ${displaySecondType(type2)}
+                                </div>
+                            </div>
+                                
+                            <div class="mt-1 wrapper flex-evenly">
+                                <div class="info-weight-container wrapper-col flex-center">
+                                    <p><i class="fa-solid fa-weight-scale"></i></p>
+                                    <h3>${calculateWeight(weight)}</h3>
+                                </div>
+                                <div class="info-height-container wrapper-col flex-center ">
+                                    <p><i class="fa-solid fa-ruler-vertical"></i></p>
+                                    <h3>${calculateHeight(height)}</h3>
+                                </div>  
+                            </div>
+                            <div class="mt-1 wrapper-col flex-center">
+                                <button class="cryBtn"><i class="fa-solid fa-circle-play"></i></button>
+                                <h3>Cry</h3>
+                            </div>
+                        </div>     
+                    </div>
+
+                    <div class="abilities-container flex-center">
+                    <div class="type-info  card">
+                        <div class="wrapper-col flex-center">
+                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Abilities</h3>
+                            <div class="text-center mt-1">
+                                <P>abilities are passive special traits that can enhance or hinder a Pokémon's performance in battle or in the overworld. They are activated automatically and can provide various effects, such as boosting stats, influencing weather conditions, or altering how moves are used. </P>
+                            </div>
+
+                            <div>
+                                <div class="wrapper-col mt-1">
+                                    <div class="flex-between pokemonAbilityUI">
+                                        <h4>${firstLetterCaps(ability1)} </h4>
+                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
+                                    </div                                
+                                    <p>${ability1ShortDescription}</p>
+                                </div>
+                                <div class="wrapper-col mt-1">
+                                    <div class="flex-between pokemonAbilityUI">
+                                        <h4>${firstLetterCaps(ability2)} </h4>
+                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
+                                    </div>
+                                    
+                                    <p>${ability2ShortDescription}</p>
+                                </div>
+                            </div>
+                            
+                        </div>                      
+                    </div>
+                </div>
+
+                <div class="catchRate-container flex-center">
+                    <div class="type-info wrapper-col card">
+                        <div class="wrapper-col flex-center">
+                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Catch Rate</h3>
+                            
+                            <div class="text-center mt-1 ">
+                                <P>In Pokémon games, the catch rate (also known as the capture rate) determines how likely you are to successfully catch a wild Pokémon when using a Poké Ball.</P>
+                            </div>
+                            <div class="catchRate-info mt-1 wrapper flex-center">
+                                <div>
+                                    <img src="images/Bag_Poké_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"pokeBall")}</p>
+                                </div>
+                                <div>
+                                    <img src="images/bag_Great_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"greatBall")}</p>
+                                </div>
+                                <div>
+                                    <img src="images/Bag_Ultra_Ball_SV_Sprite.png" width="50px"></img>
+                                    <p> ${getCatchRate(pokemonCaptureRate,"ultraBall")}</p>
+                                </div>
+                                
+                            </div>
+                        </div>                      
+                    </div>
+                </div>
+                </div>
+
+                
+
+                
+        
+        `
+    }
+
+    function getStatsSection(){
+        return `
+        
+    <div class="main-info-grid">
+        <div class="mt-2 type-diff-container flex-center ">
+            <div class="type-info wrapper-col card">
+                <div class="wrapper-col">
+                    <div class="flex-center">
+                        <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Type defenses</h3>
+                    </div>
+                    
+                    <div class="mt-1 wrapper-col">
+                        <h3>Weak Against</h3>
+                        <div class="wrapper-wrap">
+                            ${addWeakToTypingsUI(type1,type2)}
+                        </div>
+                    </div>
+
+                    <div class="mt-1 wrapper-col">
+                        <h3>Super Effective Against</h3>
+                        <div class="wrapper-wrap">
+                            ${addEffectiveTypingsUI(type1)}
+                        </div>
+                    </div>
+
+                </div>            
+            </div>
+        </div>
+
+        
+    </div>    
+        `
+    }
+
+    pokedexContent.innerHTML = getAboutSection()
+
+    pokemonStatsBtn.addEventListener("click",()=>{
+        pokedexContent.innerHTML = getStatsSection()
+    })
+
+    pokemonAboutBtn.addEventListener("click",()=>{
+        pokedexContent.innerHTML = getAboutSection()
+    })
 
     } catch (error) {
         console.log(error)
     }
 }
+
 
 
 searchBtn.addEventListener("click",()=>{
@@ -371,24 +397,6 @@ searchTxt.addEventListener("keypress",(event)=>{
     }
    
 })
-/*
-sidebarMenuOpenBtn.addEventListener("click",()=>{
-    sidebar.classList.toggle("hidden")
-    overlay.style.display = "block"
-})
-
-
-sidebarMenuCloseBtn.addEventListener("click",()=>{
-    sidebar.classList.toggle("hidden")
-    overlay.style.display = "none"
-})
-
-overlay.addEventListener("click",()=>{
-    overlay.style.display = "none"
-    sidebar.classList.toggle("hidden")
-})
-*/
-
 
 
 fetchData()
