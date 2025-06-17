@@ -600,7 +600,4 @@ function displayWeakTypes(type1, type2) {
   return removedDups;
 }
 
-
-
-
 export {displaySuperEffectiveTypes, displayWeakTypes}
