@@ -1,16 +1,13 @@
-
-//const setLimit =  "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1303"
-
 import * as typeClass from './typeClasses.js'
 
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
-const testData = "https://pokeapi.co/api/v2/pokemon/Salamence"
+//const testData = "https://pokeapi.co/api/v2/pokemon/Salamence"
 
 const abilityURL = "https://pokeapi.co/api/v2/ability/"
-const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
-const pokemonSpeciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
+//const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
+const speciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
 const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
 const pokemonTypeURL = "https://pokeapi.co/api/v2/type/"
 
@@ -19,98 +16,68 @@ const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
 const pokemonMovesBtn = document.getElementById("pokemonMovesBtn")
 const pokedexContent = document.getElementById("pokedex-content")
 
-//const pokemonData = []
-const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/pokemon/{id or name}/`
+let currentPokemonData = null
 
+const url = `https://pokeapi.co/api/v2/pokemon/`
 
-const fetchData = async () => {
+const fetchData = async ( identifier = 1) => {
     try {
-        
-        const res = await fetch(`${url}/${searchTxt.value.toLowerCase()}`);
-        //const res = await fetch(testData)
-        const pokemonDescriptionRes = await fetch(pokemonDescription)
-    
-        const data = await res.json()
-        const pokemonDescriptionData = await pokemonDescriptionRes.json()
-       
-        //console.log(data)
-        //pokemonData.push(data)
-        console.log("DATA: ", data)
-        
-        const { abilities, id, name, weight, height, sprites, types, stats } = data;
-  
-        const ability1 = abilities[0].ability.name
-        const ability2 = abilities.length > 1 ? abilities[1].ability.name : "none"
+        const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
+        const res = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() : identifier}`);
+        const data = await res.json();
+        currentPokemonData = { id: data.id, name: data.name };
 
-        const { front_default } = sprites;
-        const type1 = types[0].type.name;
-        const type2 = types.length > 1 ? types[1].type.name : "none";
+        const speciesRes = await fetch(`${speciesURL}${data.id}`);
+        const speciesData = await speciesRes.json();
+        const entry1 = speciesData.flavor_text_entries.find(e => e.language.name === "en")?.flavor_text || "No description.";
 
-        const {flavor_text_entries} = pokemonDescriptionData
-        const entry1 = flavor_text_entries[11].flavor_text
+        const name = data.name
+        const ability1 = data.abilities[0].ability.name;
+        const ability2 = data.abilities[1]?.ability.name || "none";
+        const { front_default } = data.sprites;
+        const type1 = data.types[0].type.name;
+        const type2 = data.types[1]?.type.name || "none";
+        const weight = data.weight;
+        const height = data.height;
+        const stats = data.stats;
 
-        console.log("ENTRY 1: ",entry1)
-        console.log("Ability1 :" , ability1  )
-        console.log("Ability2 :" , ability2  )
-        
         const getAbilityDescription = async (ability) => {
-            
             try {
-
                 const response = await fetch(`${abilityURL}${ability}`)
                 const data = await response.json()
-
                 const {flavor_text_entries} = data
                 const descriptionText = flavor_text_entries[1].flavor_text
-                
-                console.log(flavor_text_entries)
-                console.log("Ability description: ", descriptionText)
                 const description = descriptionText.replace(/\n/g, " ")
-
                 return description
-
             } catch (error) {
                 console.log(error)
             }
-
         }
 
         const getCaptureRate = async (pokemonName) =>{
             try {
-                const response = await fetch(`${pokemonSpeciesURL}${pokemonName}`)
+                const response = await fetch(`${speciesURL}${pokemonName}`)
                 const data = await response.json()
                 const {capture_rate} = data
-                console.log("Cate Rate: ", capture_rate)
                 return capture_rate
             } catch (error) {
                 console.log(error)
             }
         }
 
-        const getPokemonHp = () => {
+        const getPokemonHp = () => stats[0].base_stat
 
-            const health = stats[0].base_stat
-            console.log("Health: " , health)
-            return health
-        }
-
-        const getPokeBallImage = async (item)=>{
-
+        /*const getPokeBallImage = async (item) => {
             try {
                 const res = await fetch(`${pokemonItemsUrl}${item}`)
                 const listOfItems = await res.json()
-
                 const {sprites} = listOfItems 
-
-                console.log("List of items: ", sprites.default)
-
             } catch (error) {
                 console.log(error)
             }        
-        }
+        }*/
 
         const getCatchRate = (rate,item) => {
-            
             const maxHp = getPokemonHp()
             const currentHp = maxHp / 2       
             const ballMod = {
@@ -120,154 +87,122 @@ const fetchData = async () => {
             }
 
             const base = (((3 * maxHp) - (2 * currentHp)) * (rate * ballMod[item])) / (3 * maxHp)
-
             const probability = base / 255
-            console.log("Probability: ", probability)
             const percentage = (probability * 100).toFixed(2)
-            console.log(percentage)
             return `${percentage}%`
         }
 
-        
-const getTypeInfo = async (endpoint, type1, type2 = "") => {
-    /*
-        ENDPOINTS:
-        no_damage_to
-        half_damage_to
-        double_damage_to
-        no_damage_from
-        half_damage_from
-        double_damage_from
-    */
+        const getTypeInfo = async (endpoint, type1, type2 = "") => {
+            const multipliers = {};
+            const typeArray = [];
 
-    const multipliers = {};
-    const typeArray = [];
+            try {
+                const type1Response = await fetch(`${pokemonTypeURL}${type1}`);
+                const type1Data = await type1Response.json();
 
-    try {
-        const type1Response = await fetch(`${pokemonTypeURL}${type1}`);
-        const type1Data = await type1Response.json();
+                let type2Data = null;
 
-        let type2Data = null;
+                if (type2 !== "" && type2 !== "none") {
+                    const type2Response = await fetch(`${pokemonTypeURL}${type2}`);
+                    type2Data = await type2Response.json();
+                }
 
-        if (type2 !== "" && type2 !== "none") {
-            const type2Response = await fetch(`${pokemonTypeURL}${type2}`);
-            type2Data = await type2Response.json();
-        }
+                const applyMultipliers = (damage_relations) => {
+                    damage_relations.double_damage_from.forEach(type => {
+                        multipliers[type.name] = (multipliers[type.name] || 1) * 2;
+                    });
+                    damage_relations.half_damage_from.forEach(type => {
+                        multipliers[type.name] = (multipliers[type.name] || 1) * 0.5;
+                    });
+                    damage_relations.no_damage_from.forEach(type => {
+                        multipliers[type.name] = 0;
+                    });
+                };
 
-        const applyMultipliers = (damage_relations) => {
-            damage_relations.double_damage_from.forEach(type => {
-                multipliers[type.name] = (multipliers[type.name] || 1) * 2;
-            });
-            damage_relations.half_damage_from.forEach(type => {
-                multipliers[type.name] = (multipliers[type.name] || 1) * 0.5;
-            });
-            damage_relations.no_damage_from.forEach(type => {
-                multipliers[type.name] = 0;
-            });
-        };
+                const collectTypes = (damage_relations, category) => {
+                    if (damage_relations[category]) {
+                        damage_relations[category].forEach(item => {
+                            typeArray.push(item.name);
+                        });
+                    }
+                };
 
-        const collectTypes = (damage_relations, category) => {
-            if (damage_relations[category]) {
-                damage_relations[category].forEach(item => {
-                    typeArray.push(item.name);
-                });
+                applyMultipliers(type1Data.damage_relations);
+                collectTypes(type1Data.damage_relations, endpoint);
+
+                if (type2Data) {
+                    applyMultipliers(type2Data.damage_relations);
+                    collectTypes(type2Data.damage_relations, endpoint);
+                }
+
+                const unique = arr => [...new Set(arr)];
+
+                const calculatedImmunities = Object.entries(multipliers).filter(([_, mult]) => mult === 0).map(([type]) => type);
+                const calculatedResistants = Object.entries(multipliers).filter(([_, mult]) => mult > 0 && mult < 1).map(([type]) => type);
+                const calculatedWeaknesses = Object.entries(multipliers).filter(([_, mult]) => mult > 1).map(([type]) => type);
+
+                if (endpoint === "no_damage_from") {
+                    return unique(calculatedImmunities);
+                } else if (endpoint === "half_damage_from") {
+                    return unique(calculatedResistants);
+                } else if (endpoint === "double_damage_from") {
+                    return unique(calculatedWeaknesses);
+                } else if (endpoint === "double_damage_to") {
+                    return unique(type1Data.damage_relations.double_damage_to.map(t => t.name));
+                } else {
+                    return unique(typeArray);
+                }
+            } catch (error) {
+                console.error("Error fetching type info:", error);
+                return [];
             }
-        };
-
-        // Apply for type1
-        applyMultipliers(type1Data.damage_relations);
-        collectTypes(type1Data.damage_relations, endpoint);
-
-        // Apply for type2 if present
-        if (type2Data) {
-            applyMultipliers(type2Data.damage_relations);
-            collectTypes(type2Data.damage_relations, endpoint);
         }
 
-        const unique = arr => [...new Set(arr)];
-
-        const calculatedImmunities = Object.entries(multipliers)
-            .filter(([_, mult]) => mult === 0)
-            .map(([type]) => type);
-
-        const calculatedResistants = Object.entries(multipliers)
-            .filter(([_, mult]) => mult > 0 && mult < 1)
-            .map(([type]) => type);
-
-        const calculatedWeaknesses = Object.entries(multipliers)
-            .filter(([_, mult]) => mult > 1)
-            .map(([type]) => type);
-
-        // Return the correct result
-        if (endpoint === "no_damage_from") {
-            return unique(calculatedImmunities);
-        } else if (endpoint === "half_damage_from") {
-            return unique(calculatedResistants);
-        } else if (endpoint === "double_damage_from") {
-            return unique(calculatedWeaknesses);
-        } else if (endpoint === "double_damage_to") {
-            // Offensive: only type1's attacking effectiveness
-            return unique(type1Data.damage_relations.double_damage_to.map(t => t.name));
-        } else {
-            // Defensive (e.g., no_damage_to, half_damage_to)
-            return unique(typeArray);
-        }
-
-    } catch (error) {
-        console.error("Error fetching type info:", error);
-        return [];
-    }
-};
-
-
-
-// Example usage:
         const resistantAgainstTypeInfo = await getTypeInfo("half_damage_from", type1, type2);
         const weakAgainstTypeInfo = await getTypeInfo("double_damage_from", type1, type2);
         const immuneAgainstTypeInfo = await getTypeInfo("no_damage_from", type1, type2);
         const superEffectiveAgainst = await getTypeInfo("double_damage_to", type1)
-        //console.log("Immune types:", weakAgainstTypeInfo);
 
         const pokemonCaptureRate = await getCaptureRate(name)
-
         const ability1ShortDescription = await getAbilityDescription(ability1)
         const ability2ShortDescription = ability2 !== "none" ? await getAbilityDescription(ability2) : "None"
 
-        const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
-
         pokeDex.innerHTML = `
-
-            <div>
-                <div class="prevBtn-nextBtn">
-                    <div class="wrapper">
-                        <div class="prevBtn responsive-color">
-                            <h2><i class="fa-solid fa-arrow-left"></i> Previous </h2>
-                        </div>
-                        <div class="nextBtn responsive-color">
-                            <h2>Next <i class="fa-solid fa-arrow-right"></i></h2>                      
-                        </div>
-                    </div>
-                    <div class="wrapper-col flex-center">              
-                        <h1>${firstLetterCaps(name)} <span id="pokemonId">#${id}</span></h1>
-                        <div class="flex-center">
-                            <p id="primaryTypeIcon" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span></p>
-                            ${displaySecondTypeIcon(type2)}
-                        </div>
-                        
-                    </div>         
-                </div>      
-            </div>     
-            
-          
-            <div class="image-container flex-center" >
-                <div class="wrapper flex-center card">       
-                    <img class="pokemonImg" src="${front_default}" >     
+        <div class="prevBtn-nextBtn">
+            <div class="wrapper">
+                <div class="prevBtn responsive-color">
+                    <h2><i class="fa-solid fa-arrow-left"></i> Previous #${data.id-1}</h2>
+                </div>
+                <div class="nextBtn responsive-color">
+                    <h2>Next #${data.id+1}<i class="fa-solid fa-arrow-right"></i></h2>                      
                 </div>
             </div>
-      
-                   `
+            <div class="wrapper-col flex-center">              
+                <h1>${firstLetterCaps(name)} <span id="pokemonId">#${data.id}</span></h1>
+                <div class="flex-center">
+                    <p id="primaryTypeIcon" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span></p>
+                    ${displaySecondTypeIcon(type2)}
+                </div>
+            </div>         
+        </div>
+        <div class="image-container flex-center" >
+            <div class="wrapper flex-center card">       
+                <img class="pokemonImg" src="${front_default}" >     
+            </div>
+        </div>`
 
-                   /*<div class="evolutionChain-container flex-center">
+        document.querySelector(".nextBtn").addEventListener("click", () => {
+            fetchData(currentPokemonData.id + 1)
+            searchTxt.value = ""
+            console.log("TEST")
+        })
+
+        document.querySelector(".prevBtn").addEventListener("click",()=>{
+            fetchData(currentPokemonData.id - 1)
+            searchTxt.value = ""
+        })
+
+        /*<div class="evolutionChain-container flex-center">
                     <div class="type-info wrapper-col card">
                         <div class="wrapper-col flex-center">
                             <h3 class="responsive-color">Evolution Chain</h3>
@@ -469,31 +404,21 @@ const getTypeInfo = async (endpoint, type1, type2 = "") => {
 
     pokedexContent.innerHTML = getAboutSection()
 
-    pokemonStatsBtn.addEventListener("click",()=>{
-        pokedexContent.innerHTML = getStatsSection()
-    })
-
-    pokemonAboutBtn.addEventListener("click",()=>{
-        pokedexContent.innerHTML = getAboutSection()
-    })
-
-
+    pokemonStatsBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getStatsSection() })
+    pokemonAboutBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getAboutSection() })
 
     } catch (error) {
         console.log(error)
     }
 }
 
-searchBtn.addEventListener("click",()=>{
-    fetchData()
-    //console.log(searchTxt.value)
-})
+searchBtn.addEventListener("click", () => {fetchData(searchTxt.value);});
 
-searchTxt.addEventListener("keypress",(event)=>{
-    if (event.key === "Enter"){
-         fetchData()
+searchTxt.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        fetchData(searchTxt.value);
     }
-   
-})
+});
+
 
 //fetchData()
