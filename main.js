@@ -1,18 +1,18 @@
 
 //const setLimit =  "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=1303"
 
-
-import * as typings from './typings.js'
 import * as typeClass from './typeClasses.js'
 
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
-const testData = "https://pokeapi.co/api/v2/pokemon/2"
-const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
+const testData = "https://pokeapi.co/api/v2/pokemon/Salamence"
+
 const abilityURL = "https://pokeapi.co/api/v2/ability/"
+const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
 const pokemonSpeciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
 const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
+const pokemonTypeURL = "https://pokeapi.co/api/v2/type/"
 
 const pokemonAboutBtn = document.getElementById("pokemonAboutBtn")
 const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
@@ -26,8 +26,8 @@ const url = `https://pokeapi.co/api/v2/pokemon/` //`https://pokeapi.co/api/v2/po
 const fetchData = async () => {
     try {
         
-        //const res = await fetch(`${url}/${searchTxt.value.toLowerCase()}`);
-        const res = await fetch(testData)
+        const res = await fetch(`${url}/${searchTxt.value.toLowerCase()}`);
+        //const res = await fetch(testData)
         const pokemonDescriptionRes = await fetch(pokemonDescription)
     
         const data = await res.json()
@@ -128,6 +128,106 @@ const fetchData = async () => {
             return `${percentage}%`
         }
 
+        
+const getTypeInfo = async (endpoint, type1, type2 = "") => {
+    /*
+        ENDPOINTS:
+        no_damage_to
+        half_damage_to
+        double_damage_to
+        no_damage_from
+        half_damage_from
+        double_damage_from
+    */
+
+    const multipliers = {};
+    const typeArray = [];
+
+    try {
+        const type1Response = await fetch(`${pokemonTypeURL}${type1}`);
+        const type1Data = await type1Response.json();
+
+        let type2Data = null;
+
+        if (type2 !== "" && type2 !== "none") {
+            const type2Response = await fetch(`${pokemonTypeURL}${type2}`);
+            type2Data = await type2Response.json();
+        }
+
+        const applyMultipliers = (damage_relations) => {
+            damage_relations.double_damage_from.forEach(type => {
+                multipliers[type.name] = (multipliers[type.name] || 1) * 2;
+            });
+            damage_relations.half_damage_from.forEach(type => {
+                multipliers[type.name] = (multipliers[type.name] || 1) * 0.5;
+            });
+            damage_relations.no_damage_from.forEach(type => {
+                multipliers[type.name] = 0;
+            });
+        };
+
+        const collectTypes = (damage_relations, category) => {
+            if (damage_relations[category]) {
+                damage_relations[category].forEach(item => {
+                    typeArray.push(item.name);
+                });
+            }
+        };
+
+        // Apply for type1
+        applyMultipliers(type1Data.damage_relations);
+        collectTypes(type1Data.damage_relations, endpoint);
+
+        // Apply for type2 if present
+        if (type2Data) {
+            applyMultipliers(type2Data.damage_relations);
+            collectTypes(type2Data.damage_relations, endpoint);
+        }
+
+        const unique = arr => [...new Set(arr)];
+
+        const calculatedImmunities = Object.entries(multipliers)
+            .filter(([_, mult]) => mult === 0)
+            .map(([type]) => type);
+
+        const calculatedResistants = Object.entries(multipliers)
+            .filter(([_, mult]) => mult > 0 && mult < 1)
+            .map(([type]) => type);
+
+        const calculatedWeaknesses = Object.entries(multipliers)
+            .filter(([_, mult]) => mult > 1)
+            .map(([type]) => type);
+
+        // Return the correct result
+        if (endpoint === "no_damage_from") {
+            return unique(calculatedImmunities);
+        } else if (endpoint === "half_damage_from") {
+            return unique(calculatedResistants);
+        } else if (endpoint === "double_damage_from") {
+            return unique(calculatedWeaknesses);
+        } else if (endpoint === "double_damage_to") {
+            // Offensive: only type1's attacking effectiveness
+            return unique(type1Data.damage_relations.double_damage_to.map(t => t.name));
+        } else {
+            // Defensive (e.g., no_damage_to, half_damage_to)
+            return unique(typeArray);
+        }
+
+    } catch (error) {
+        console.error("Error fetching type info:", error);
+        return [];
+    }
+};
+
+
+
+// Example usage:
+        const resistantAgainstTypeInfo = await getTypeInfo("half_damage_from", type1, type2);
+        const weakAgainstTypeInfo = await getTypeInfo("double_damage_from", type1, type2);
+        const immuneAgainstTypeInfo = await getTypeInfo("no_damage_from", type1, type2);
+        const superEffectiveAgainst = await getTypeInfo("double_damage_to", type1)
+        //console.log("Immune types:", weakAgainstTypeInfo);
+
         const pokemonCaptureRate = await getCaptureRate(name)
 
         const ability1ShortDescription = await getAbilityDescription(ability1)
@@ -213,22 +313,10 @@ const fetchData = async () => {
         const capName = name.charAt(0).toUpperCase() + name.slice(1)
         return capName
     }
-    
-    function addEffectiveTypingsUI(primaryType){
 
-        const typeArr = typings.displaySuperEffectiveTypes(primaryType)
-        //console.log(typeArr)
-   
-        return typeArr.map((type)=>{
-            return `<p class="pokemonTypeUI ${typeClass.addClassToUI(type)}"><span>${typeClass.addImgToUI(type)}</span>${firstLetterCaps(type)}</p>`
-           
-         }).join("")
-    
-    }
-
-    function addWeakToTypingsUI(primaryType,secondaryType){
+    function addWeakToTypingsUI(arrayOfTypes){
         
-         const typeArr = typings.displayWeakTypes(primaryType,secondaryType)
+         const typeArr = arrayOfTypes
    
         return typeArr.map((type)=>{
             return `<p class="pokemonTypeUI ${typeClass.addClassToUI(type)}" ><span>${typeClass.addImgToUI(type)}</span>${firstLetterCaps(type)}</p>`
@@ -326,11 +414,7 @@ const fetchData = async () => {
                         </div>                      
                     </div>
                 </div>
-                </div>
-
-                
-
-                
+                </div>            
         
         `
     }
@@ -343,20 +427,34 @@ const fetchData = async () => {
             <div class="type-info wrapper-col card">
                 <div class="wrapper-col">
                     <div class="flex-center">
-                        <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Type defenses</h3>
+                        <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Type Info</h3>
                     </div>
                     
                     <div class="mt-1 wrapper-col">
-                        <h3>Weak Against</h3>
+                        <h3>Weak Against:</h3>
                         <div class="wrapper-wrap">
-                            ${addWeakToTypingsUI(type1,type2)}
+                            ${addWeakToTypingsUI(weakAgainstTypeInfo)}
                         </div>
                     </div>
 
                     <div class="mt-1 wrapper-col">
-                        <h3>Super Effective Against</h3>
+                        <h3>Resistant Against:</h3>
                         <div class="wrapper-wrap">
-                            ${addEffectiveTypingsUI(type1)}
+                            ${addWeakToTypingsUI(resistantAgainstTypeInfo)}
+                        </div>
+                    </div>
+
+                    <div class="mt-1 wrapper-col">
+                        <h3>Immune Against:</h3>
+                        <div class="wrapper-wrap">
+                            ${addWeakToTypingsUI(immuneAgainstTypeInfo)}
+                        </div>
+                    </div>
+
+                    <div class="mt-1 wrapper-col">
+                        <h3>Super Effective Against:</h3>
+                        <div class="wrapper-wrap">
+                            ${addWeakToTypingsUI(superEffectiveAgainst)}
                         </div>
                     </div>
 
@@ -379,12 +477,12 @@ const fetchData = async () => {
         pokedexContent.innerHTML = getAboutSection()
     })
 
+
+
     } catch (error) {
         console.log(error)
     }
 }
-
-
 
 searchBtn.addEventListener("click",()=>{
     fetchData()
@@ -398,8 +496,4 @@ searchTxt.addEventListener("keypress",(event)=>{
    
 })
 
-
-fetchData()
-
-
-
+//fetchData()
