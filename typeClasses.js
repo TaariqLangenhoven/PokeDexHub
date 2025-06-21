@@ -165,3 +165,5 @@ function addResponsiveColor(type){
 }
 
 export {addClassToUI, addImgToUI, addResponsiveColor}
+
+
