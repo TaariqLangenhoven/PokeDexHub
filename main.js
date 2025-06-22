@@ -22,7 +22,7 @@ const url = `https://pokeapi.co/api/v2/pokemon/`
 
 const fetchData = async ( identifier = 1) => {
     try {
-        const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
+        //const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
         const res = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() : identifier}`);
         const data = await res.json();
         currentPokemonData = { id: data.id, name: data.name };
@@ -67,6 +67,7 @@ const fetchData = async ( identifier = 1) => {
 
         const getPokemonHp = () => stats[0].base_stat
 
+        //Might use in the future: currently using static images
         /*const getPokeBallImage = async (item) => {
             try {
                 const res = await fetch(`${pokemonItemsUrl}${item}`)
@@ -158,6 +159,34 @@ const fetchData = async ( identifier = 1) => {
             }
         }
 
+        const getStatValues = async (data)=>{
+        try {
+            const array = []
+            const {stats} = data
+            
+            stats.forEach(i=> { 
+                console.log(i.base_stat)
+                array.push(i.base_stat)
+                
+            })
+            return array
+        } catch (error) {
+            
+        }
+        }
+
+        function displayStatValues(array){
+
+            return array.map(i=>`<h4>${i}</h4>`).join("")
+    
+        }
+
+        function calculateTotal (array){
+
+            const statValues = [...array]
+            return `${statValues.reduce((i , index)=> i + index , 0)}`
+        }
+
         const resistantAgainstTypeInfo = await getTypeInfo("half_damage_from", type1, type2);
         const weakAgainstTypeInfo = await getTypeInfo("double_damage_from", type1, type2);
         const immuneAgainstTypeInfo = await getTypeInfo("no_damage_from", type1, type2);
@@ -166,6 +195,7 @@ const fetchData = async ( identifier = 1) => {
         const pokemonCaptureRate = await getCaptureRate(name)
         const ability1ShortDescription = await getAbilityDescription(ability1)
         const ability2ShortDescription = ability2 !== "none" ? await getAbilityDescription(ability2) : "None"
+        const getChartStatValues = await getStatValues(data)
 
         pokeDex.innerHTML = `
         <div class="prevBtn-nextBtn">
@@ -190,31 +220,45 @@ const fetchData = async ( identifier = 1) => {
                 <img class="pokemonImg" src="${front_default}" >     
             </div>
         </div>`
+  
+    const getChartData = async (data)=>{
+            
+        createChart(data)
+    }
 
-        document.querySelector(".nextBtn").addEventListener("click", () => {
-            fetchData(currentPokemonData.id + 1)
-            searchTxt.value = ""
-            console.log("TEST")
-        })
+    function createChart(data){
 
-        document.querySelector(".prevBtn").addEventListener("click",()=>{
-            fetchData(currentPokemonData.id - 1)
-            searchTxt.value = ""
-        })
+        const ctx = document.getElementById("myChart")
+        const {stats} = data
+        stats.map(i=> console.log(i))
 
-        /*<div class="evolutionChain-container flex-center">
-                    <div class="type-info wrapper-col card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="responsive-color">Evolution Chain</h3>
-                            <div class="flex-center">
-                                <p>img of pokemon evo chain 1</p>
-                                <p>img of pokemon evo chain 2</p>
-                                <p>img of pokemon evo chain 3</p>
-                            </div>
-                        </div>                      
-                    </div>
-                </div>*/
-    
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+            labels: stats.map(i=>  firstLetterCaps(i.stat.name)),
+            datasets: [{
+                label: 'Base Stats of Pokemon',
+                data: stats.map(entry=> entry.base_stat),
+                backgroundColor: '#3B4CCA',
+                borderWidth: 1,
+                borderRadius: 20
+            }]
+            },
+            options: {
+            indexAxis: "y",
+            responsive: true,
+            aspectRatio: 1,
+            //create resposiveness
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                beginAtZero: true
+                }
+            }
+            }
+        });
+
+    }
 
     function displaySecondType(type2){
         if (type2 === "none"){
@@ -355,10 +399,35 @@ const fetchData = async ( identifier = 1) => {
     }
 
     function getStatsSection(){
+
         return `
-        
+    
     <div class="main-info-grid">
-        <div class="mt-2 type-diff-container flex-center ">
+
+        <div class="mt-2 flex-center">    
+            <div class="wrapper-col card">
+                <div class="chart flex-center">
+                    <canvas id="myChart"></canvas>
+                    <div class="flex-col gap-5">
+                        ${displayStatValues(getChartStatValues)}
+                    </div>
+                        
+                </div>
+                    <div class="flex-center gap-05">
+                        <div>
+                            <h3>Total: </h3>
+                        </div>
+                        <div>
+                            <h3>${calculateTotal(getChartStatValues)}</h3>
+                        </div>           
+                    </div>
+                    <div class="wrapper-col flex-center p-1">
+                        <p class="text-center">Base stats range from values of 1 to 255. They represent the potential of a Pokemon species in battle</p>
+                    </div>        
+            </div>
+        </div>
+
+        <div class="type-diff-container flex-center ">
             <div class="type-info wrapper-col card">
                 <div class="wrapper-col">
                     <div class="flex-center">
@@ -392,24 +461,53 @@ const fetchData = async ( identifier = 1) => {
                             ${addWeakToTypingsUI(superEffectiveAgainst)}
                         </div>
                     </div>
-
                 </div>            
             </div>
         </div>
 
         
-    </div>    
+    </div>
+    
         `
+        /*<div class="evolutionChain-container flex-center">
+                    <div class="type-info wrapper-col card">
+                        <div class="wrapper-col flex-center">
+                            <h3 class="responsive-color">Evolution Chain</h3>
+                            <div class="flex-center">
+                                <p>img of pokemon evo chain 1</p>
+                                <p>img of pokemon evo chain 2</p>
+                                <p>img of pokemon evo chain 3</p>
+                            </div>
+                        </div>                      
+                    </div>
+                </div>*/
     }
 
     pokedexContent.innerHTML = getAboutSection()
 
-    pokemonStatsBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getStatsSection() })
+    document.querySelector(".nextBtn").addEventListener("click", () => {
+        fetchData(currentPokemonData.id + 1)
+        searchTxt.value = ""
+        console.log("TEST")
+    })
+
+    document.querySelector(".prevBtn").addEventListener("click",()=>{
+        fetchData(currentPokemonData.id - 1)
+        searchTxt.value = ""
+    })
+
+    pokemonStatsBtn.addEventListener("click",()=>{ 
+        pokedexContent.innerHTML = getStatsSection()
+        getChartData(data)
+     })
+
     pokemonAboutBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getAboutSection() })
 
+    //FetchData catch block:
     } catch (error) {
         console.log(error)
     }
+
 }
 
 searchBtn.addEventListener("click", () => {fetchData(searchTxt.value);});
