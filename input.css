@@ -82,12 +82,29 @@
   margin-top: 2em;
 }
 
+.p-1 {
+  padding: 1em;
+}
+
 .pr-50 {
   padding-right: 100px ;
 }
 
+.gap-05 {
+  gap: 0.5em;
+}
+
+.gap-5 {
+  gap: 1.25em;
+}
+
 .text-center {
   text-align: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
 }
 
 .flex-start{
@@ -395,6 +412,13 @@ body {
 
 .cryBtn:hover {
   cursor: pointer;
+}
+
+.chart {
+  width: 80%;
+  height: 100%;
+  padding: 1em;
+  margin: 0 auto
 }
 
 @media (max-width: 855px) {
