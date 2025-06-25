@@ -3,6 +3,7 @@ import * as typeClass from './typeClasses.js'
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
+const aboutNavbar = document.querySelector(".about-navbar")
 //const testData = "https://pokeapi.co/api/v2/pokemon/Salamence"
 
 const abilityURL = "https://pokeapi.co/api/v2/ability/"
@@ -10,6 +11,7 @@ const abilityURL = "https://pokeapi.co/api/v2/ability/"
 const speciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
 const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
 const pokemonTypeURL = "https://pokeapi.co/api/v2/type/"
+const pokemonMoveURL = "https://pokeapi.co/api/v2/move/"
 
 const pokemonAboutBtn = document.getElementById("pokemonAboutBtn")
 const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
@@ -230,6 +232,7 @@ const fetchData = async ( identifier = 1) => {
 
         const ctx = document.getElementById("myChart")
         const {stats} = data
+
         stats.map(i=> console.log(i))
 
         new Chart(ctx, {
@@ -398,6 +401,168 @@ const fetchData = async ( identifier = 1) => {
         `
     }
 
+    function getMoveSection(){
+        return `
+    
+    <div class="main-info-grid">
+
+        <div class="mt-2 type-diff-container flex-center ">
+            <div class="type-info wrapper-col card">
+                <div class="wrapper-col">
+                    <h1>Test</h1>
+                    <div class="table-wrapper">
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th id="lvBtn">Lv.</th>
+                                <th id="moveBtn">Move</th>
+                                <th id="typeBtn">Type</th>
+                                <th id="catBtn">Cat.</th>
+                                <th id="powerBtn">Power</th>
+                                <th id="accBtn">Acc.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movelist-container">                         
+                        </tbody>
+                    </table>
+                </div>            
+            </div>
+        </div>
+
+        
+    </div>
+    
+        `
+    }
+
+    const getMovesDataFromURL = async ()=>{
+        
+    }
+
+    //const movesData = await getMovesDataFromURL()
+
+    //Add a versionGroup parameter and a moveLearnMethod parameter to make function more dynamic
+        const getPokemonMovesByLevel = async (pokemonData,movesData)=> {
+        try {
+
+        const { moves } = pokemonData;
+
+        const levelUpMoves = [];
+
+        moves.forEach(moveEntry => {
+            // Filter only those learned by level-up
+            const levelUpDetails = moveEntry.version_group_details.filter(
+                detail => detail.move_learn_method.name === "level-up" && detail.version_group.name === "emerald"
+            ) ;
+
+            levelUpDetails.forEach(detail => {
+                levelUpMoves.push({
+                    moveName: moveEntry.move.name,
+                    levelLearnedAt: detail.level_learned_at,
+                    versionGroup: detail.version_group.name,
+                });
+            });
+        });
+
+        // Optional: sort by level
+        levelUpMoves.sort((a, b) => a.levelLearnedAt - b.levelLearnedAt);
+
+        const detailMoves = await Promise.all(
+
+            levelUpMoves.map(async (move)=>{
+
+                try {
+                    const res = await fetch(`${movesData}${move.moveName}`)
+                    const data = await res.json()
+                    console.log("Data on all moves:",data)
+
+                    return {
+                        ...move,
+                        type: data.type.name,
+                        power: data.power ?? "-",
+                        accuracy: data.accuracy ?? "-",
+                        category: data.damage_class.name,
+                    }
+
+                } catch (error) {
+                    return []
+                }
+
+            })
+
+        )
+
+        
+        console.log("detailMoves:",detailMoves)
+        //console.log("MoveNames: ",levelUpMoves.map((i)=> i.moveName));
+
+        return detailMoves;
+
+         } catch (error) {
+            
+        }
+
+        }
+
+        const moves = await getPokemonMovesByLevel(data,pokemonMoveURL)
+
+        function displayImagesForMoveCategory(category){
+
+            switch (category) {
+                case "physical":
+                    return `<img src="moveCategoryImages/move-physical.png" width="50px">`
+                    break;
+                case "special":
+                    return `<img src="moveCategoryImages/move-special.png" width="50px">`
+                default: 
+                    return `<img src="moveCategoryImages/move-status.png" width="50px">`
+                    break;
+            }
+
+        }
+
+        function displayPokemonMovesByLevel(arr){
+
+            const moveListContainer = document.getElementById("movelist-container")
+
+            moveListContainer.innerHTML = arr.map((entry)=>{
+                
+                const {
+                    moveName,
+                    levelLearnedAt,
+                    power,
+                    accuracy,
+                    category,
+                    type
+                } = entry
+
+                /*const moveList = entry.moveName
+                const levelList = entry.levelLearnedAt
+                const powerList = entry.power
+                const accuracyList = entry.accuracy
+                const typeList = entry.type*/
+                
+                //console.log(moveList)
+
+                return `
+                
+                <tr>
+                    <td>${levelLearnedAt}</td>            
+                    <td>${firstLetterCaps(moveName)}</td>
+                    <td>${displaySecondType(type)}</td>
+                    <td>${displayImagesForMoveCategory(category)}</td>
+                    <td>${power}</td>
+                    <td>${accuracy}</td>
+                </tr>
+
+                `
+                
+            }).join("")       
+        }
+
+        //displayPokemonMovesByLevel(moves)
+
     function getStatsSection(){
 
         return `
@@ -483,6 +648,7 @@ const fetchData = async ( identifier = 1) => {
                 </div>*/
     }
 
+    
     pokedexContent.innerHTML = getAboutSection()
 
     document.querySelector(".nextBtn").addEventListener("click", () => {
@@ -501,8 +667,14 @@ const fetchData = async ( identifier = 1) => {
         getChartData(data)
      })
 
+    
     pokemonAboutBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getAboutSection() })
+    pokemonMovesBtn.addEventListener("click",()=>{ 
+        pokedexContent.innerHTML = getMoveSection() 
+        displayPokemonMovesByLevel(moves)
+    })
 
+    aboutNavbar.classList.remove("hidden")
     //FetchData catch block:
     } catch (error) {
         console.log(error)
