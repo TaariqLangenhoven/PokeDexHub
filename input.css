@@ -421,15 +421,59 @@ body {
   margin: 0 auto
 }
 
+.table-wrapper {
+  padding: 0 25px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  color: var(--dark-grey);
+  margin: auto;
+  table-layout: fixed;
+  border-collapse: collapse;
+  overflow-x: scroll;
+}
+
+th {
+  border-right: 2px solid lightgray;
+  border-bottom: 2px solid var(--dark-grey);
+  background-color: darkgrey;
+  padding: 1em 0px;
+  font-size: 1rem;
+}
+
+td:not(:nth-child(2)) {
+  text-align: center;
+}
+
+
+
+td {
+  
+  border-bottom: 1px solid green;
+  padding: 20px 0.5em;
+}
+
+#moveBtn {
+  width: 25%;
+}
+
+#typeBtn {
+  width: 20%;
+}
+
 @media (max-width: 855px) {
   .hideOnMobile {
   display: none;
 }
+
 /*
 .sidebarMenuOpenBtn{
   display: block;
 }
 */
+
 .nav-desktop ul li{
   padding: 15px;
 }
