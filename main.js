@@ -28,8 +28,13 @@ const fetchData = async ( identifier = 1) => {
         //const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
         const response = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() && identifier.trim() : identifier}`);
 
-        checkAPIResponse(response,"MAIN_POKEMON_DATA")
-
+        //checkAPIResponse(response,"MAIN_POKEMON_DATA")
+        if(!response.ok){
+            
+            console.error(`API ERROR ${response.status}: ${response.statusText}`)
+            alert("Pokemon not found.")
+            
+        }
         const data = await response.json();
         const speciesResponse = await fetch(`${speciesURL}${data.id}`);
 
@@ -49,10 +54,11 @@ const fetchData = async ( identifier = 1) => {
         const weight = data.weight;
         const height = data.height;
         const stats = data.stats;
-        const entry1 = getSpeciesDescription(data)
+
+        const entry1 = getSpeciesDescription(speciesData)
 
         function getSpeciesDescription(data,version = "emerald"){
-            const entry = speciesData.flavor_text_entries.find(e => e.language.name === "en" && e.version.name === version)?.flavor_text || "No description.";
+            const entry = data.flavor_text_entries.find(e => e.language.name === "en" && e.version.name === version)?.flavor_text || "No description.";
             return entry
         }
 
@@ -733,9 +739,9 @@ searchBtn.addEventListener("click", () => {
     if(isValidPokemonIdentifier){
         return fetchData(searchTxt.value);
     } else {
-
+        alert("Please enter a valid Pokémon name or ID.");
     }
-    
+    //fetchData(searchTxt.value)
 
 });
 
