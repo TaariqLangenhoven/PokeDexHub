@@ -18,6 +18,7 @@ const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
 const pokemonMovesBtn = document.getElementById("pokemonMovesBtn")
 const pokedexContent = document.getElementById("pokedex-content")
 
+let currentChart;
 let currentPokemonData = null
 
 const url = `https://pokeapi.co/api/v2/pokemon/`
@@ -25,17 +26,28 @@ const url = `https://pokeapi.co/api/v2/pokemon/`
 const fetchData = async ( identifier = 1) => {
     try {
         //const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
-        const res = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() : identifier}`);
-        const data = await res.json();
-        currentPokemonData = { id: data.id, name: data.name };
+        const response = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() && identifier.trim() : identifier}`);
 
-        const speciesRes = await fetch(`${speciesURL}${data.id}`);
-        const speciesData = await speciesRes.json();
-        const entry1 = speciesData.flavor_text_entries.find(e => e.language.name === "en")?.flavor_text || "No description.";
+        //checkAPIResponse(response,"MAIN_POKEMON_DATA")
+        if(!response.ok){
+            
+            console.error(`API ERROR ${response.status}: ${response.statusText}`)
+            alert("Pokemon not found.")
+            
+        }
+        const data = await response.json();
+        const speciesResponse = await fetch(`${speciesURL}${data.id}`);
+
+        checkAPIResponse(speciesResponse, "SPECIES")
+
+        const speciesData = await speciesResponse.json();
+
+        currentPokemonData = { id: data.id, name: data.name };
 
         const name = data.name
         const ability1 = data.abilities[0].ability.name;
         const ability2 = data.abilities[1]?.ability.name || "none";
+
         const { front_default } = data.sprites;
         const type1 = data.types[0].type.name;
         const type2 = data.types[1]?.type.name || "none";
@@ -43,28 +55,41 @@ const fetchData = async ( identifier = 1) => {
         const height = data.height;
         const stats = data.stats;
 
-        const getAbilityDescription = async (ability) => {
+        const entry1 = getSpeciesDescription(speciesData)
+
+        function getSpeciesDescription(data,version = "emerald"){
+            const entry = data.flavor_text_entries.find(e => e.language.name === "en" && e.version.name === version)?.flavor_text || "No description.";
+            return entry
+        }
+
+        const getAbilityDescription = async (ability, version = "emerald") => {
             try {
                 const response = await fetch(`${abilityURL}${ability}`)
-                const data = await response.json()
-                const {flavor_text_entries} = data
-                const descriptionText = flavor_text_entries[1].flavor_text
+
+                checkAPIResponse(response,"ABILITY_DESCRIPTION")
+
+                const data = await response.json()  
+
+                const englishVersion = data.flavor_text_entries?.filter((entry)=> entry.language.name === "en" && entry.version_group.name === version)
+                
+                const descriptionText = englishVersion[0].flavor_text
+
+                if(!descriptionText){
+                    throw new Error("Ability description not available.")
+                }
+
                 const description = descriptionText.replace(/\n/g, " ")
                 return description
+
+
             } catch (error) {
-                console.log(error)
+                console.error("Developer Error Log: ", error.message)
+                throw new Error("Something went wrong while fetching Pokemon data.")
             }
         }
 
-        const getCaptureRate = async (pokemonName) =>{
-            try {
-                const response = await fetch(`${speciesURL}${pokemonName}`)
-                const data = await response.json()
-                const {capture_rate} = data
-                return capture_rate
-            } catch (error) {
-                console.log(error)
-            }
+        const getCaptureRate = (speciesData) =>{
+           return speciesData.capture_rate
         }
 
         const getPokemonHp = () => stats[0].base_stat
@@ -91,7 +116,11 @@ const fetchData = async ( identifier = 1) => {
 
             const base = (((3 * maxHp) - (2 * currentHp)) * (rate * ballMod[item])) / (3 * maxHp)
             const probability = base / 255
-            const percentage = (probability * 100).toFixed(2)
+            const percentage = new Intl.NumberFormat("en-ZA", {
+                style: 'percent',
+                minimumFractionDigits: 1
+            }).format(probability)
+            
             return `${percentage}%`
         }
 
@@ -101,12 +130,23 @@ const fetchData = async ( identifier = 1) => {
 
             try {
                 const type1Response = await fetch(`${pokemonTypeURL}${type1}`);
+
+                checkAPIResponse(type1Response,"PRIMARY_TYPE_INFO")
+
                 const type1Data = await type1Response.json();
 
                 let type2Data = null;
 
                 if (type2 !== "" && type2 !== "none") {
                     const type2Response = await fetch(`${pokemonTypeURL}${type2}`);
+
+                    checkAPIResponse(type2Response,"SECONDARY_TYPE_INFO")
+
+                    if(!type2Response.ok){
+                        console.error(`API Error ${type2Response.status}: ${type2Response.statusText}`)
+                        throw new Error("POKEMON_FETCH_FAILED")
+                    }
+
                     type2Data = await type2Response.json();
                 }
 
@@ -156,25 +196,13 @@ const fetchData = async ( identifier = 1) => {
                     return unique(typeArray);
                 }
             } catch (error) {
-                console.error("Error fetching type info:", error);
+                console.error("Error fetching type info:", error.message);
                 return [];
             }
         }
 
-        const getStatValues = async (data)=>{
-        try {
-            const array = []
-            const {stats} = data
-            
-            stats.forEach(i=> { 
-                console.log(i.base_stat)
-                array.push(i.base_stat)
-                
-            })
-            return array
-        } catch (error) {
-            
-        }
+        const getStatValues = (data)=>{   
+            return data.stats.map((stat)=> stat.base_stat)
         }
 
         function displayStatValues(array){
@@ -194,10 +222,9 @@ const fetchData = async ( identifier = 1) => {
         const immuneAgainstTypeInfo = await getTypeInfo("no_damage_from", type1, type2);
         const superEffectiveAgainst = await getTypeInfo("double_damage_to", type1)
 
-        const pokemonCaptureRate = await getCaptureRate(name)
+        const pokemonCaptureRate = getCaptureRate(speciesData)
         const ability1ShortDescription = await getAbilityDescription(ability1)
         const ability2ShortDescription = ability2 !== "none" ? await getAbilityDescription(ability2) : "None"
-        const getChartStatValues = await getStatValues(data)
 
         pokeDex.innerHTML = `
         <div class="prevBtn-nextBtn">
@@ -223,7 +250,7 @@ const fetchData = async ( identifier = 1) => {
             </div>
         </div>`
   
-    const getChartData = async (data)=>{
+    const getChartData = (data)=>{
             
         createChart(data)
     }
@@ -231,11 +258,18 @@ const fetchData = async ( identifier = 1) => {
     function createChart(data){
 
         const ctx = document.getElementById("myChart")
+
+        //get rid of potential memory leaks
+        if(currentChart){
+            currentChart.destroy()
+            console.log("chart destroyed")
+        }
+
         const {stats} = data
 
         stats.map(i=> console.log(i))
 
-        new Chart(ctx, {
+       currentChart = new Chart(ctx, {
             type: 'bar',
             data: {
             labels: stats.map(i=>  firstLetterCaps(i.stat.name)),
@@ -443,7 +477,7 @@ const fetchData = async ( identifier = 1) => {
     //const movesData = await getMovesDataFromURL()
 
     //Add a versionGroup parameter and a moveLearnMethod parameter to make function more dynamic
-        const getPokemonMovesByLevel = async (pokemonData,movesData)=> {
+    const getPokemonMovesByLevel = async (pokemonData,movesData)=> {
         try {
 
         const { moves } = pokemonData;
@@ -473,9 +507,12 @@ const fetchData = async ( identifier = 1) => {
             levelUpMoves.map(async (move)=>{
 
                 try {
-                    const res = await fetch(`${movesData}${move.moveName}`)
-                    const data = await res.json()
-                    console.log("Data on all moves:",data)
+                    const response = await fetch(`${movesData}${move.moveName}`)
+
+                    checkAPIResponse(response,"moveset_")
+
+                    const data = await response.json()
+                    //console.log("Data on all moves:",data)
 
                     return {
                         ...move,
@@ -486,7 +523,8 @@ const fetchData = async ( identifier = 1) => {
                     }
 
                 } catch (error) {
-                    return []
+                    console.error("Error fetching pokemon moveset:" , error.message)
+                    return null
                 }
 
             })
@@ -494,20 +532,21 @@ const fetchData = async ( identifier = 1) => {
         )
 
         
-        console.log("detailMoves:",detailMoves)
+        //console.log("detailMoves:",detailMoves)
         //console.log("MoveNames: ",levelUpMoves.map((i)=> i.moveName));
 
         return detailMoves;
 
          } catch (error) {
-            
+            console.error("Error fetching pokemon moveset by level:" , error.message)
+            return []
         }
 
-        }
+    }
 
-        const moves = await getPokemonMovesByLevel(data,pokemonMoveURL)
+    const moves = await getPokemonMovesByLevel(data,pokemonMoveURL)
 
-        function displayImagesForMoveCategory(category){
+    function displayImagesForMoveCategory(category){
 
             switch (category) {
                 case "physical":
@@ -520,9 +559,9 @@ const fetchData = async ( identifier = 1) => {
                     break;
             }
 
-        }
+    }
 
-        function displayPokemonMovesByLevel(arr){
+    function displayPokemonMovesByLevel(arr){
 
             const moveListContainer = document.getElementById("movelist-container")
 
@@ -550,7 +589,7 @@ const fetchData = async ( identifier = 1) => {
                 <tr>
                     <td>${levelLearnedAt}</td>            
                     <td>${firstLetterCaps(moveName)}</td>
-                    <td>${displaySecondType(type)}</td>
+                    <td class="flex-center">${displaySecondType(type)}</td>
                     <td>${displayImagesForMoveCategory(category)}</td>
                     <td>${power}</td>
                     <td>${accuracy}</td>
@@ -559,7 +598,7 @@ const fetchData = async ( identifier = 1) => {
                 `
                 
             }).join("")       
-        }
+    }
 
         //displayPokemonMovesByLevel(moves)
 
@@ -574,7 +613,7 @@ const fetchData = async ( identifier = 1) => {
                 <div class="chart flex-center">
                     <canvas id="myChart"></canvas>
                     <div class="flex-col gap-5">
-                        ${displayStatValues(getChartStatValues)}
+                        ${displayStatValues(getStatValues(data))}
                     </div>
                         
                 </div>
@@ -583,7 +622,7 @@ const fetchData = async ( identifier = 1) => {
                             <h3>Total: </h3>
                         </div>
                         <div>
-                            <h3>${calculateTotal(getChartStatValues)}</h3>
+                            <h3>${calculateTotal(getStatValues(data))}</h3>
                         </div>           
                     </div>
                     <div class="wrapper-col flex-center p-1">
@@ -648,7 +687,13 @@ const fetchData = async ( identifier = 1) => {
                 </div>*/
     }
 
-    
+    function checkAPIResponse(response,label = "API"){
+        if(!response.ok){
+            console.error(`${label} Error ${response.status}: ${response.statusText}`);
+        throw new Error(`${label.toUpperCase()}_FETCH_FAILED`);
+        }
+    }    
+
     pokedexContent.innerHTML = getAboutSection()
 
     document.querySelector(".nextBtn").addEventListener("click", () => {
@@ -677,12 +722,28 @@ const fetchData = async ( identifier = 1) => {
     aboutNavbar.classList.remove("hidden")
     //FetchData catch block:
     } catch (error) {
-        console.log(error)
+        console.error("Could not find Pokemon: ",error.message)
     }
 
 }
 
-searchBtn.addEventListener("click", () => {fetchData(searchTxt.value);});
+searchBtn.addEventListener("click", () => {
+    
+    function isValidPokemonIdentifier(input){
+        
+        const namePattern = /^[a-zA-Z\-]+$/
+        const idPattern = /^[0-9]+$/; 
+        return namePattern.test(input) || idPattern.test(input)
+    }
+
+    if(isValidPokemonIdentifier){
+        return fetchData(searchTxt.value);
+    } else {
+        alert("Please enter a valid Pokémon name or ID.");
+    }
+    //fetchData(searchTxt.value)
+
+});
 
 searchTxt.addEventListener("keypress", (event) => {
     if (event.key === "Enter") {
@@ -692,3 +753,10 @@ searchTxt.addEventListener("keypress", (event) => {
 
 
 //fetchData()
+// DEV NOTES:
+/* 
+    - Handel validation
+    - Handel prev and next button errors when selecting first and last pokemon
+    - Create an Abort Controller to prevent infinite loading
+    - functionality for info buttons on abilities, that give the full description of the ability
+*/
