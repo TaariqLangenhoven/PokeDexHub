@@ -78,7 +78,7 @@ cd pokedex-app
 ## ✍️ Future Improvements
 
 - 🔄 Add loading spinners and error UI
-- 📱 Make UI fully responsive for mobile
+- 📱 Make UI fully responsive for desktop
 - 🧪 Add unit tests for helper functions
 - 🧰 Add advanced filters (by type, generation, etc.)
 - 🌐 Add offline caching using localStorage or IndexedDB
