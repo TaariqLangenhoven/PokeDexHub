@@ -99,7 +99,7 @@ function addClassToUI(type) {
             return `<i class="fa-solid fa-republican"></i>`
             break;
         default:
-            break;
+            return `<i class="fa-solid fa-question"></i>`; // Safe fallback icon
     }
 
 }
@@ -160,7 +160,7 @@ function addResponsiveColor(type){
             return `res-type-fairy`
             break;
         default:
-            break;
+            return 'res-type-unknown'; // Fallback class to avoid undefined
   }
 }
 
