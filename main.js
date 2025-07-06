@@ -1,762 +1,106 @@
-import * as typeClass from './typeClasses.js'
+import { fetchPokemon, fetchSpecies } from './api/apiCalls.js'
+import { getPokemonHeadInfo } from './ui/renderHeadSection.js'
+import { getAboutSection } from './ui/renderAboutSection.js'
+import { getMoveSection } from './ui/renderMovesSection.js'
+import { getStatsSection } from './ui/renderStatsSection.js'
+import { getChartData } from './chart/chartData.js'
+import { displayPokemonMovesByLevel } from './utils/moveListHelpers.js'
+import { processPokemonData } from './utils/processPokemonData.js'
+import { setupNavigationButtons, setupTabButtons } from './ui/eventHandlers.js'
 
 const searchTxt = document.getElementById("searchTxt")
 const searchBtn = document.getElementById("searchBtn")
 const pokeDex = document.getElementById("pokeDex")
-const aboutNavbar = document.querySelector(".about-navbar")
-//const testData = "https://pokeapi.co/api/v2/pokemon/Salamence"
-
-const abilityURL = "https://pokeapi.co/api/v2/ability/"
-//const pokemonDescription = "https://pokeapi.co/api/v2/pokemon-species/2"
-const speciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
-const pokemonItemsUrl = "https://pokeapi.co/api/v2/item/"
-const pokemonTypeURL = "https://pokeapi.co/api/v2/type/"
-const pokemonMoveURL = "https://pokeapi.co/api/v2/move/"
-
-const pokemonAboutBtn = document.getElementById("pokemonAboutBtn")
-const pokemonStatsBtn = document.getElementById("pokemonStatsBtn")
-const pokemonMovesBtn = document.getElementById("pokemonMovesBtn")
 const pokedexContent = document.getElementById("pokedex-content")
+const aboutNavbar = document.querySelector(".about-navbar")
 
 let currentChart;
-let currentPokemonData = null
-
-const url = `https://pokeapi.co/api/v2/pokemon/`
-
-const fetchData = async ( identifier = 1) => {
-    try {
-        //const pokemonName = searchTxt.value || identifier; // fallback to ID if empty
-        const response = await fetch(`${url}${typeof identifier === "string" ? identifier.toLowerCase() && identifier.trim() : identifier}`);
-
-        //checkAPIResponse(response,"MAIN_POKEMON_DATA")
-        if(!response.ok){
-            
-            console.error(`API ERROR ${response.status}: ${response.statusText}`)
-            alert("Pokemon not found.")
-            
-        }
-        const data = await response.json();
-        const speciesResponse = await fetch(`${speciesURL}${data.id}`);
-
-        checkAPIResponse(speciesResponse, "SPECIES")
-
-        const speciesData = await speciesResponse.json();
-
-        currentPokemonData = { id: data.id, name: data.name };
-
-        const name = data.name
-        const ability1 = data.abilities[0].ability.name;
-        const ability2 = data.abilities[1]?.ability.name || "none";
-
-        const { front_default } = data.sprites;
-        const type1 = data.types[0].type.name;
-        const type2 = data.types[1]?.type.name || "none";
-        const weight = data.weight;
-        const height = data.height;
-        const stats = data.stats;
-
-        const entry1 = getSpeciesDescription(speciesData)
-
-        function getSpeciesDescription(data,version = "emerald"){
-            const entry = data.flavor_text_entries.find(e => e.language.name === "en" && e.version.name === version)?.flavor_text || "No description.";
-            return entry
-        }
-
-        const getAbilityDescription = async (ability, version = "emerald") => {
-            try {
-                const response = await fetch(`${abilityURL}${ability}`)
-
-                checkAPIResponse(response,"ABILITY_DESCRIPTION")
-
-                const data = await response.json()  
-
-                const englishVersion = data.flavor_text_entries?.filter((entry)=> entry.language.name === "en" && entry.version_group.name === version)
-                
-                const descriptionText = englishVersion[0].flavor_text
-
-                if(!descriptionText){
-                    throw new Error("Ability description not available.")
-                }
-
-                const description = descriptionText.replace(/\n/g, " ")
-                return description
-
-
-            } catch (error) {
-                console.error("Developer Error Log: ", error.message)
-                throw new Error("Something went wrong while fetching Pokemon data.")
-            }
-        }
-
-        const getCaptureRate = (speciesData) =>{
-           return speciesData.capture_rate
-        }
-
-        const getPokemonHp = () => stats[0].base_stat
-
-        //Might use in the future: currently using static images
-        /*const getPokeBallImage = async (item) => {
-            try {
-                const res = await fetch(`${pokemonItemsUrl}${item}`)
-                const listOfItems = await res.json()
-                const {sprites} = listOfItems 
-            } catch (error) {
-                console.log(error)
-            }        
-        }*/
-
-        const getCatchRate = (rate,item) => {
-            const maxHp = getPokemonHp()
-            const currentHp = maxHp / 2       
-            const ballMod = {
-                "pokeBall": 1,
-                "greatBall": 1.5,
-                "ultraBall": 2
-            }
-
-            const base = (((3 * maxHp) - (2 * currentHp)) * (rate * ballMod[item])) / (3 * maxHp)
-            const probability = base / 255
-            const percentage = new Intl.NumberFormat("en-ZA", {
-                style: 'percent',
-                minimumFractionDigits: 1
-            }).format(probability)
-            
-            return `${percentage}%`
-        }
-
-        const getTypeInfo = async (endpoint, type1, type2 = "") => {
-            const multipliers = {};
-            const typeArray = [];
-
-            try {
-                const type1Response = await fetch(`${pokemonTypeURL}${type1}`);
-
-                checkAPIResponse(type1Response,"PRIMARY_TYPE_INFO")
-
-                const type1Data = await type1Response.json();
-
-                let type2Data = null;
-
-                if (type2 !== "" && type2 !== "none") {
-                    const type2Response = await fetch(`${pokemonTypeURL}${type2}`);
-
-                    checkAPIResponse(type2Response,"SECONDARY_TYPE_INFO")
-
-                    if(!type2Response.ok){
-                        console.error(`API Error ${type2Response.status}: ${type2Response.statusText}`)
-                        throw new Error("POKEMON_FETCH_FAILED")
-                    }
-
-                    type2Data = await type2Response.json();
-                }
-
-                const applyMultipliers = (damage_relations) => {
-                    damage_relations.double_damage_from.forEach(type => {
-                        multipliers[type.name] = (multipliers[type.name] || 1) * 2;
-                    });
-                    damage_relations.half_damage_from.forEach(type => {
-                        multipliers[type.name] = (multipliers[type.name] || 1) * 0.5;
-                    });
-                    damage_relations.no_damage_from.forEach(type => {
-                        multipliers[type.name] = 0;
-                    });
-                };
-
-                const collectTypes = (damage_relations, category) => {
-                    if (damage_relations[category]) {
-                        damage_relations[category].forEach(item => {
-                            typeArray.push(item.name);
-                        });
-                    }
-                };
-
-                applyMultipliers(type1Data.damage_relations);
-                collectTypes(type1Data.damage_relations, endpoint);
-
-                if (type2Data) {
-                    applyMultipliers(type2Data.damage_relations);
-                    collectTypes(type2Data.damage_relations, endpoint);
-                }
-
-                const unique = arr => [...new Set(arr)];
-
-                const calculatedImmunities = Object.entries(multipliers).filter(([_, mult]) => mult === 0).map(([type]) => type);
-                const calculatedResistants = Object.entries(multipliers).filter(([_, mult]) => mult > 0 && mult < 1).map(([type]) => type);
-                const calculatedWeaknesses = Object.entries(multipliers).filter(([_, mult]) => mult > 1).map(([type]) => type);
-
-                if (endpoint === "no_damage_from") {
-                    return unique(calculatedImmunities);
-                } else if (endpoint === "half_damage_from") {
-                    return unique(calculatedResistants);
-                } else if (endpoint === "double_damage_from") {
-                    return unique(calculatedWeaknesses);
-                } else if (endpoint === "double_damage_to") {
-                    return unique(type1Data.damage_relations.double_damage_to.map(t => t.name));
-                } else {
-                    return unique(typeArray);
-                }
-            } catch (error) {
-                console.error("Error fetching type info:", error.message);
-                return [];
-            }
-        }
-
-        const getStatValues = (data)=>{   
-            return data.stats.map((stat)=> stat.base_stat)
-        }
-
-        function displayStatValues(array){
-
-            return array.map(i=>`<h4>${i}</h4>`).join("")
-    
-        }
-
-        function calculateTotal (array){
-
-            const statValues = [...array]
-            return `${statValues.reduce((i , index)=> i + index , 0)}`
-        }
-
-        const resistantAgainstTypeInfo = await getTypeInfo("half_damage_from", type1, type2);
-        const weakAgainstTypeInfo = await getTypeInfo("double_damage_from", type1, type2);
-        const immuneAgainstTypeInfo = await getTypeInfo("no_damage_from", type1, type2);
-        const superEffectiveAgainst = await getTypeInfo("double_damage_to", type1)
-
-        const pokemonCaptureRate = getCaptureRate(speciesData)
-        const ability1ShortDescription = await getAbilityDescription(ability1)
-        const ability2ShortDescription = ability2 !== "none" ? await getAbilityDescription(ability2) : "None"
-
-        pokeDex.innerHTML = `
-        <div class="prevBtn-nextBtn">
-            <div class="wrapper">
-                <div class="prevBtn responsive-color">
-                    <h2><i class="fa-solid fa-arrow-left"></i> Previous #${data.id-1}</h2>
-                </div>
-                <div class="nextBtn responsive-color">
-                    <h2>Next #${data.id+1}<i class="fa-solid fa-arrow-right"></i></h2>                      
-                </div>
-            </div>
-            <div class="wrapper-col flex-center">              
-                <h1>${firstLetterCaps(name)} <span id="pokemonId">#${data.id}</span></h1>
-                <div class="flex-center">
-                    <p id="primaryTypeIcon" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span></p>
-                    ${displaySecondTypeIcon(type2)}
-                </div>
-            </div>         
-        </div>
-        <div class="image-container flex-center" >
-            <div class="wrapper flex-center card">       
-                <img class="pokemonImg" src="${front_default}" >     
-            </div>
-        </div>`
-  
-    const getChartData = (data)=>{
-            
-        createChart(data)
-    }
-
-    function createChart(data){
-
-        const ctx = document.getElementById("myChart")
-
-        //get rid of potential memory leaks
-        if(currentChart){
-            currentChart.destroy()
-            console.log("chart destroyed")
-        }
-
-        const {stats} = data
-
-        stats.map(i=> console.log(i))
-
-       currentChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-            labels: stats.map(i=>  firstLetterCaps(i.stat.name)),
-            datasets: [{
-                label: 'Base Stats of Pokemon',
-                data: stats.map(entry=> entry.base_stat),
-                backgroundColor: '#3B4CCA',
-                borderWidth: 1,
-                borderRadius: 20
-            }]
-            },
-            options: {
-            indexAxis: "y",
-            responsive: true,
-            aspectRatio: 1,
-            //create resposiveness
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                beginAtZero: true
-                }
-            }
-            }
-        });
-
-    }
-
-    function displaySecondType(type2){
-        if (type2 === "none"){
-            return ``
-        } else {
-           return `<p id="secondaryType" class="pokemonTypeUI ${typeClass.addClassToUI(type2)}"><span>${typeClass.addImgToUI(type2)}</span>${firstLetterCaps(type2)}</p>`
-        }
-    }
-
-    function displaySecondTypeIcon(type2){
-        if (type2 === "none"){
-            return ``
-        } else {
-           return `<p id="secondaryTypeIcon" class="pokemonTypeUI ${typeClass.addClassToUI(type2)}"><span>${typeClass.addImgToUI(type2)}</span></p>`
-        }
-    }
-    
-    function calculateWeight(weight){
-      const actualWeight =  weight * 100
-      const kilograms = actualWeight / 1000
-      return kilograms + "kg"
-    }
-
-    function calculateHeight(height){
-        const actualHeight = height * 10
-        const meters = actualHeight / 100
-        return meters + "m"
-    }
-
-    function firstLetterCaps(name){
-        const capName = name.charAt(0).toUpperCase() + name.slice(1)
-        return capName
-    }
-
-    function addWeakToTypingsUI(arrayOfTypes){
-        
-         const typeArr = arrayOfTypes
-   
-        return typeArr.map((type)=>{
-            return `<p class="pokemonTypeUI ${typeClass.addClassToUI(type)}" ><span>${typeClass.addImgToUI(type)}</span>${firstLetterCaps(type)}</p>`
-           
-         }).join("")
-    }
-  
-    function getAboutSection(){
-        return `
-        
-                <div class="about-stats-moves-container main-info-grid">
-                    <div class="mt-2 species-container flex-center">
-                        <div class="type-info wrapper-col card">
-                            <div class="wrapper-col flex-center">
-                                <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Species</h3>
-                                <div class="text-center mt-1 ">
-                                    <p>${entry1}</p>
-                                </div>
-                                <div class="wrapper mt-1 ">
-                                    <p id="primaryType" class="pokemonTypeUI ${typeClass.addClassToUI(type1)}"><span>${typeClass.addImgToUI(type1)}</span>${firstLetterCaps(type1)}</p>
-                                    ${displaySecondType(type2)}
-                                </div>
-                            </div>
-                                
-                            <div class="mt-1 wrapper flex-evenly">
-                                <div class="info-weight-container wrapper-col flex-center">
-                                    <p><i class="fa-solid fa-weight-scale"></i></p>
-                                    <h3>${calculateWeight(weight)}</h3>
-                                </div>
-                                <div class="info-height-container wrapper-col flex-center ">
-                                    <p><i class="fa-solid fa-ruler-vertical"></i></p>
-                                    <h3>${calculateHeight(height)}</h3>
-                                </div>  
-                            </div>
-                            <div class="mt-1 wrapper-col flex-center">
-                                <button class="cryBtn"><i class="fa-solid fa-circle-play"></i></button>
-                                <h3>Cry</h3>
-                            </div>
-                        </div>     
-                    </div>
-
-                    <div class="abilities-container flex-center">
-                    <div class="type-info  card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Abilities</h3>
-                            <div class="text-center mt-1">
-                                <P>abilities are passive special traits that can enhance or hinder a Pokémon's performance in battle or in the overworld. They are activated automatically and can provide various effects, such as boosting stats, influencing weather conditions, or altering how moves are used. </P>
-                            </div>
-
-                            <div>
-                                <div class="wrapper-col mt-1">
-                                    <div class="flex-between pokemonAbilityUI">
-                                        <h4>${firstLetterCaps(ability1)} </h4>
-                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
-                                    </div                                
-                                    <p>${ability1ShortDescription}</p>
-                                </div>
-                                <div class="wrapper-col mt-1">
-                                    <div class="flex-between pokemonAbilityUI">
-                                        <h4>${firstLetterCaps(ability2)} </h4>
-                                        <button class="ability-info-button"><i class="fa-solid fa-circle-info"></i></button>
-                                    </div>
-                                    
-                                    <p>${ability2ShortDescription}</p>
-                                </div>
-                            </div>
-                            
-                        </div>                      
-                    </div>
-                </div>
-
-                <div class="catchRate-container flex-center">
-                    <div class="type-info wrapper-col card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Catch Rate</h3>
-                            
-                            <div class="text-center mt-1 ">
-                                <P>In Pokémon games, the catch rate (also known as the capture rate) determines how likely you are to successfully catch a wild Pokémon when using a Poké Ball.</P>
-                            </div>
-                            <div class="catchRate-info mt-1 wrapper flex-center">
-                                <div>
-                                    <img src="images/Bag_Poké_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"pokeBall")}</p>
-                                </div>
-                                <div>
-                                    <img src="images/bag_Great_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"greatBall")}</p>
-                                </div>
-                                <div>
-                                    <img src="images/Bag_Ultra_Ball_SV_Sprite.png" width="50px"></img>
-                                    <p> ${getCatchRate(pokemonCaptureRate,"ultraBall")}</p>
-                                </div>
-                                
-                            </div>
-                        </div>                      
-                    </div>
-                </div>
-                </div>            
-        
-        `
-    }
-
-    function getMoveSection(){
-        return `
-    
-    <div class="main-info-grid">
-
-        <div class="mt-2 type-diff-container flex-center ">
-            <div class="type-info wrapper-col card">
-                <div class="wrapper-col">
-                    <h1>Test</h1>
-                    <div class="table-wrapper">
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th id="lvBtn">Lv.</th>
-                                <th id="moveBtn">Move</th>
-                                <th id="typeBtn">Type</th>
-                                <th id="catBtn">Cat.</th>
-                                <th id="powerBtn">Power</th>
-                                <th id="accBtn">Acc.</th>
-                            </tr>
-                        </thead>
-                        <tbody id="movelist-container">                         
-                        </tbody>
-                    </table>
-                </div>            
-            </div>
-        </div>
-
-        
-    </div>
-    
-        `
-    }
-
-    const getMovesDataFromURL = async ()=>{
-        
-    }
-
-    //const movesData = await getMovesDataFromURL()
-
-    //Add a versionGroup parameter and a moveLearnMethod parameter to make function more dynamic
-    const getPokemonMovesByLevel = async (pokemonData,movesData)=> {
-        try {
-
-        const { moves } = pokemonData;
-
-        const levelUpMoves = [];
-
-        moves.forEach(moveEntry => {
-            // Filter only those learned by level-up
-            const levelUpDetails = moveEntry.version_group_details.filter(
-                detail => detail.move_learn_method.name === "level-up" && detail.version_group.name === "emerald"
-            ) ;
-
-            levelUpDetails.forEach(detail => {
-                levelUpMoves.push({
-                    moveName: moveEntry.move.name,
-                    levelLearnedAt: detail.level_learned_at,
-                    versionGroup: detail.version_group.name,
-                });
-            });
-        });
-
-        // Optional: sort by level
-        levelUpMoves.sort((a, b) => a.levelLearnedAt - b.levelLearnedAt);
-
-        const detailMoves = await Promise.all(
-
-            levelUpMoves.map(async (move)=>{
-
-                try {
-                    const response = await fetch(`${movesData}${move.moveName}`)
-
-                    checkAPIResponse(response,"moveset_")
-
-                    const data = await response.json()
-                    //console.log("Data on all moves:",data)
-
-                    return {
-                        ...move,
-                        type: data.type.name,
-                        power: data.power ?? "-",
-                        accuracy: data.accuracy ?? "-",
-                        category: data.damage_class.name,
-                    }
-
-                } catch (error) {
-                    console.error("Error fetching pokemon moveset:" , error.message)
-                    return null
-                }
-
-            })
-
-        )
-
-        
-        //console.log("detailMoves:",detailMoves)
-        //console.log("MoveNames: ",levelUpMoves.map((i)=> i.moveName));
-
-        return detailMoves;
-
-         } catch (error) {
-            console.error("Error fetching pokemon moveset by level:" , error.message)
-            return []
-        }
-
-    }
-
-    const moves = await getPokemonMovesByLevel(data,pokemonMoveURL)
-
-    function displayImagesForMoveCategory(category){
-
-            switch (category) {
-                case "physical":
-                    return `<img src="moveCategoryImages/move-physical.png" width="50px">`
-                    break;
-                case "special":
-                    return `<img src="moveCategoryImages/move-special.png" width="50px">`
-                default: 
-                    return `<img src="moveCategoryImages/move-status.png" width="50px">`
-                    break;
-            }
-
-    }
-
-    function displayPokemonMovesByLevel(arr){
-
-            const moveListContainer = document.getElementById("movelist-container")
-
-            moveListContainer.innerHTML = arr.map((entry)=>{
-                
-                const {
-                    moveName,
-                    levelLearnedAt,
-                    power,
-                    accuracy,
-                    category,
-                    type
-                } = entry
-
-                /*const moveList = entry.moveName
-                const levelList = entry.levelLearnedAt
-                const powerList = entry.power
-                const accuracyList = entry.accuracy
-                const typeList = entry.type*/
-                
-                //console.log(moveList)
-
-                return `
-                
-                <tr>
-                    <td>${levelLearnedAt}</td>            
-                    <td>${firstLetterCaps(moveName)}</td>
-                    <td class="flex-center">${displaySecondType(type)}</td>
-                    <td>${displayImagesForMoveCategory(category)}</td>
-                    <td>${power}</td>
-                    <td>${accuracy}</td>
-                </tr>
-
-                `
-                
-            }).join("")       
-    }
-
-        //displayPokemonMovesByLevel(moves)
-
-    function getStatsSection(){
-
-        return `
-    
-    <div class="main-info-grid">
-
-        <div class="mt-2 flex-center">    
-            <div class="wrapper-col card">
-                <div class="chart flex-center">
-                    <canvas id="myChart"></canvas>
-                    <div class="flex-col gap-5">
-                        ${displayStatValues(getStatValues(data))}
-                    </div>
-                        
-                </div>
-                    <div class="flex-center gap-05">
-                        <div>
-                            <h3>Total: </h3>
-                        </div>
-                        <div>
-                            <h3>${calculateTotal(getStatValues(data))}</h3>
-                        </div>           
-                    </div>
-                    <div class="wrapper-col flex-center p-1">
-                        <p class="text-center">Base stats range from values of 1 to 255. They represent the potential of a Pokemon species in battle</p>
-                    </div>        
-            </div>
-        </div>
-
-        <div class="type-diff-container flex-center ">
-            <div class="type-info wrapper-col card">
-                <div class="wrapper-col">
-                    <div class="flex-center">
-                        <h3 class="${typeClass.addResponsiveColor(type1)} responsive-title">Type Info</h3>
-                    </div>
-                    
-                    <div class="mt-1 wrapper-col">
-                        <h3>Weak Against:</h3>
-                        <div class="wrapper-wrap">
-                            ${addWeakToTypingsUI(weakAgainstTypeInfo)}
-                        </div>
-                    </div>
-
-                    <div class="mt-1 wrapper-col">
-                        <h3>Resistant Against:</h3>
-                        <div class="wrapper-wrap">
-                            ${addWeakToTypingsUI(resistantAgainstTypeInfo)}
-                        </div>
-                    </div>
-
-                    <div class="mt-1 wrapper-col">
-                        <h3>Immune Against:</h3>
-                        <div class="wrapper-wrap">
-                            ${addWeakToTypingsUI(immuneAgainstTypeInfo)}
-                        </div>
-                    </div>
-
-                    <div class="mt-1 wrapper-col">
-                        <h3>Super Effective Against:</h3>
-                        <div class="wrapper-wrap">
-                            ${addWeakToTypingsUI(superEffectiveAgainst)}
-                        </div>
-                    </div>
-                </div>            
-            </div>
-        </div>
-
-        
-    </div>
-    
-        `
-        /*<div class="evolutionChain-container flex-center">
-                    <div class="type-info wrapper-col card">
-                        <div class="wrapper-col flex-center">
-                            <h3 class="responsive-color">Evolution Chain</h3>
-                            <div class="flex-center">
-                                <p>img of pokemon evo chain 1</p>
-                                <p>img of pokemon evo chain 2</p>
-                                <p>img of pokemon evo chain 3</p>
-                            </div>
-                        </div>                      
-                    </div>
-                </div>*/
-    }
-
-    function checkAPIResponse(response,label = "API"){
-        if(!response.ok){
-            console.error(`${label} Error ${response.status}: ${response.statusText}`);
-        throw new Error(`${label.toUpperCase()}_FETCH_FAILED`);
-        }
-    }    
-
-    pokedexContent.innerHTML = getAboutSection()
-
-    document.querySelector(".nextBtn").addEventListener("click", () => {
-        fetchData(currentPokemonData.id + 1)
-        searchTxt.value = ""
-        console.log("TEST")
-    })
-
-    document.querySelector(".prevBtn").addEventListener("click",()=>{
-        fetchData(currentPokemonData.id - 1)
-        searchTxt.value = ""
-    })
-
-    pokemonStatsBtn.addEventListener("click",()=>{ 
-        pokedexContent.innerHTML = getStatsSection()
-        getChartData(data)
-     })
-
-    
-    pokemonAboutBtn.addEventListener("click",()=>{ pokedexContent.innerHTML = getAboutSection() })
-    pokemonMovesBtn.addEventListener("click",()=>{ 
-        pokedexContent.innerHTML = getMoveSection() 
-        displayPokemonMovesByLevel(moves)
+let currentPokemonData = null;
+
+const fetchData = async (identifier = 1) => {
+  try {
+    const data = await fetchPokemon(
+      typeof identifier === "string" ? identifier.toLowerCase().trim() : identifier
+    )
+    const speciesData = await fetchSpecies(data.id)
+    currentPokemonData = { id: data.id, name: data.name }
+
+    const processed = await processPokemonData(data, speciesData)
+
+    pokeDex.innerHTML = getPokemonHeadInfo(
+      processed.data,
+      processed.name,
+      processed.type1,
+      processed.type2,
+      processed.front_default
+    )
+
+    pokedexContent.innerHTML = getAboutSection(
+      processed.type1,
+      processed.entry1,
+      processed.type2,
+      processed.weight,
+      processed.height,
+      processed.ability1,
+      processed.ability1ShortDescription,
+      processed.ability2,
+      processed.ability2ShortDescription,
+      processed.pokemonCaptureRate,
+      processed.pokemonHp
+    )
+
+    setupNavigationButtons(fetchData, currentPokemonData.id, searchTxt)
+
+    setupTabButtons({
+      data: processed.data,
+      type1: processed.type1,
+      type2: processed.type2,
+      weak: processed.weakAgainstTypeInfo,
+      resist: processed.resistantAgainstTypeInfo,
+      immune: processed.immuneAgainstTypeInfo,
+      superEffective: processed.superEffectiveAgainst,
+      entryInfo: processed.entry1,
+      moves: processed.moves,
+      ability1: processed.ability1,
+      ability1Description: processed.ability1ShortDescription,
+      ability2: processed.ability2,
+      ability2Description: processed.ability2ShortDescription,
+      weight: processed.weight,
+      height: processed.height,
+      captureRate: processed.pokemonCaptureRate,
+      hp: processed.pokemonHp,
+      getStatsSection,
+      getChartData,
+      getAboutSection,
+      getMoveSection,
+      displayPokemonMovesByLevel,
+      container: pokedexContent,
+      chartRef: currentChart
     })
 
     aboutNavbar.classList.remove("hidden")
-    //FetchData catch block:
-    } catch (error) {
-        console.error("Could not find Pokemon: ",error.message)
-    }
 
+  } catch (error) {
+    console.error("Could not find Pokémon: ", error.message)
+  }
 }
 
 searchBtn.addEventListener("click", () => {
-    
-    function isValidPokemonIdentifier(input){
-        
-        const namePattern = /^[a-zA-Z\-]+$/
-        const idPattern = /^[0-9]+$/; 
-        return namePattern.test(input) || idPattern.test(input)
-    }
-
-    if(isValidPokemonIdentifier){
-        return fetchData(searchTxt.value);
-    } else {
-        alert("Please enter a valid Pokémon name or ID.");
-    }
-    //fetchData(searchTxt.value)
-
-});
+  isValidPokemonIdentifier(searchTxt.value)
+    ? fetchData(searchTxt.value)
+    : alert("Please enter a valid Pokémon name or ID.")
+})
 
 searchTxt.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") {
-        fetchData(searchTxt.value);
-    }
-});
+  if (event.key === "Enter") {
+    isValidPokemonIdentifier(searchTxt.value)
+      ? fetchData(searchTxt.value)
+      : alert("Please enter a valid Pokémon name or ID.")
+  }
+})
 
-
-//fetchData()
-// DEV NOTES:
-/* 
-    - Handel validation
-    - Handel prev and next button errors when selecting first and last pokemon
-    - Create an Abort Controller to prevent infinite loading
-    - functionality for info buttons on abilities, that give the full description of the ability
-*/
+function isValidPokemonIdentifier(input) {
+  const namePattern = /^[a-zA-Z\-]+$/
+  const idPattern = /^[0-9]+$/
+  return namePattern.test(input) || idPattern.test(input)
+}
